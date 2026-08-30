@@ -20,10 +20,22 @@
 #include <QtMath>
 #include <cmath>
 
+#ifdef Q_OS_WIN
+// NOMINMAX: windows.h otherwise `#define`s min/max, which silently
+// breaks any unrelated std::min/max or qMin/qMax call anywhere later in
+// this translation unit (targetGeometry()'s qMax() included).
+// WIN32_LEAN_AND_MEAN: excludes rarely-needed API surface (winsock1,
+// COM, GDI extras, ...) that both bloats build time and risks its own
+// macro/typedef clashes with Qt headers.
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#else
 #include <KX11Extras>
 
 #ifdef HAVE_LAYERSHELLQT
 #include <LayerShellQt/window.h>
+#endif
 #endif
 
 namespace
@@ -250,6 +262,9 @@ void SlideWindow::ensurePlatformConfigured()
     }
     m_platformConfigured = true;
 
+#ifdef Q_OS_WIN
+    configureWindows();
+#else
     m_isWayland = QGuiApplication::platformName() == QLatin1String("wayland");
     m_externallyManaged = qEnvironmentVariable("XDG_CURRENT_DESKTOP").contains(QLatin1String("GNOME"));
     if (m_isWayland) {
@@ -257,8 +272,21 @@ void SlideWindow::ensurePlatformConfigured()
     } else {
         configureX11();
     }
+#endif
 }
 
+#ifdef Q_OS_WIN
+void SlideWindow::configureWindows()
+{
+    // Qt::Tool (rather than a plain top-level) is what keeps this out of
+    // the taskbar and the Alt-Tab switcher -- WS_EX_TOOLWINDOW under the
+    // hood, the same exclusion X11's NET::SkipTaskbar achieves via a
+    // different mechanism. HWND_TOPMOST (applied per-call in slideIn(),
+    // since it's a z-order request rather than a persistent window
+    // style) is the Win32 equivalent of X11's NET::KeepAbove.
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | windowFlags());
+}
+#else
 void SlideWindow::configureX11()
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | windowFlags());
@@ -314,6 +342,7 @@ void SlideWindow::configureWayland()
     resize(geo.size());
 #endif
 }
+#endif
 
 QRect SlideWindow::targetGeometry() const
 {
@@ -352,6 +381,31 @@ void SlideWindow::slideIn()
         ensurePlatformConfigured();
     }
 
+#ifdef Q_OS_WIN
+    // Windows places no restriction on a client freely moving its own
+    // top-level window (unlike Wayland), so this is a real geometry
+    // slide-in exactly like the X11 path below.
+    QRect start = target;
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
+        start.moveLeft(screen->geometry().right() + 1);
+    }
+    setGeometry(start);
+    show();
+    disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
+    m_geometryAnimation->stop();
+    m_geometryAnimation->setDuration(m_config->animationDurationMs());
+    m_geometryAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    m_geometryAnimation->setStartValue(start);
+    m_geometryAnimation->setEndValue(target);
+    m_geometryAnimation->start();
+
+    // SetWindowPos with HWND_TOPMOST is the Win32 always-on-top
+    // primitive -- Qt::WindowStaysOnTopHint alone is honored inconsistently
+    // once a window has already been shown, so this is reapplied on
+    // every slideIn() rather than relied on as a one-time window flag.
+    SetWindowPos(reinterpret_cast<HWND>(winId()), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    SetForegroundWindow(reinterpret_cast<HWND>(winId()));
+#else
     if (m_externallyManaged) {
         // GNOME/mutter: the mdnote-quake Shell extension owns geometry,
         // monitor placement and the slide animation entirely from
@@ -395,6 +449,7 @@ void SlideWindow::slideIn()
     if (!m_isWayland) {
         KX11Extras::forceActiveWindow(winId());
     }
+#endif
     raise();
     activateWindow();
 }
@@ -403,6 +458,20 @@ void SlideWindow::slideOut()
 {
     m_isOpen = false;
 
+#ifdef Q_OS_WIN
+    QRect end = geometry();
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
+        end.moveLeft(screen->geometry().right() + 1);
+    }
+    disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
+    m_geometryAnimation->stop();
+    m_geometryAnimation->setDuration(m_config->animationDurationMs());
+    m_geometryAnimation->setEasingCurve(QEasingCurve::InCubic);
+    m_geometryAnimation->setStartValue(geometry());
+    m_geometryAnimation->setEndValue(end);
+    connect(m_geometryAnimation, &QPropertyAnimation::finished, this, [this] { hide(); });
+    m_geometryAnimation->start();
+#else
     if (m_isWayland) {
         hide();
     } else {
@@ -419,6 +488,7 @@ void SlideWindow::slideOut()
         connect(m_geometryAnimation, &QPropertyAnimation::finished, this, [this] { hide(); });
         m_geometryAnimation->start();
     }
+#endif
 }
 
 void SlideWindow::openFileAndShow(const QString &filePath)

@@ -12,7 +12,7 @@ A Yakuake-style, slide-out Markdown notebook for Linux. Press F10, jot something
 
 ### Features
 
-- **Global F10 toggle** — slides in from the right edge, slides back out. Native `KGlobalAccel` binding on KDE Plasma; a companion GNOME Shell extension provides the same toggle under GNOME/Wayland, where ordinary clients can't register global shortcuts or force their own window placement.
+- **Global F10 toggle** — slides in from the right edge, slides back out. Native `KGlobalAccel` binding on KDE Plasma; a companion GNOME Shell extension provides the same toggle under GNOME/Wayland, where ordinary clients can't register global shortcuts or force their own window placement. Experimental Windows support (see [Windows](#windows-experimental-needs-testing)) uses `RegisterHotKey` instead.
 - **Two editing modes** — source mode (plain Markdown text, syntax-highlighted) and normal mode (WYSIWYG rich text), switchable at any time. Saving always writes plain Markdown, via a serializer that walks the document directly to GFM Markdown — no external converter, no HTML intermediate.
 - **Live theme switching** — nine built-in color presets plus the system default, applied instantly across the whole window.
 - **Directory-based sidebar** — browse a folder of notes by all/recent/starred, with search, rename, and delete.
@@ -56,6 +56,19 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 ```
 
 The rest of this README uses the from-source `~/.local` paths — substitute `/usr` for `~/.local` throughout if you installed via the `.deb`.
+
+### Windows (experimental, needs testing)
+
+Basic Windows support was added recently and **has not yet been built or run on an actual Windows machine** — it compiles cleanly against the same source tree on Linux with the KDE-specific pieces swapped out (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`), but real testing is still needed. [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) very welcome if you try it.
+
+Prerequisites: Qt6 (MSVC or MinGW kit, including the Linguist Tools component — installable via the [Qt online installer](https://www.qt.io/download-qt-installer)) and CMake.
+
+```powershell
+cmake -B build
+cmake --build build --config Release
+```
+
+The GNOME Shell extension and Debian packaging obviously don't apply here — this builds just the `mdnote.exe` editor/notebook itself. There's no Windows installer yet; run the built executable directly, or copy it wherever you like.
 
 ### Autostart (recommended)
 
@@ -146,7 +159,7 @@ Yakuake 风格、从右侧滑出的 Markdown 速记本。按 F10 呼出，随手
 
 ### 功能
 
-- **全局 F10 呼出/收起** — 从屏幕右侧滑入滑出。KDE Plasma 下用原生 `KGlobalAccel` 绑定；GNOME/Wayland 下普通客户端既不能注册全局快捷键，也不能强制自己的窗口位置，所以配了一个同名的 GNOME Shell 扩展来实现同样的 F10 呼出。
+- **全局 F10 呼出/收起** — 从屏幕右侧滑入滑出。KDE Plasma 下用原生 `KGlobalAccel` 绑定；GNOME/Wayland 下普通客户端既不能注册全局快捷键，也不能强制自己的窗口位置，所以配了一个同名的 GNOME Shell 扩展来实现同样的 F10 呼出。实验性的 Windows 支持（见[Windows](#windows实验性还没实测)）用的是 `RegisterHotKey`。
 - **源码/正常两种编辑模式** — 源码模式是带语法高亮的纯 Markdown 文本，正常模式是所见即所得的富文本，随时可以切换。保存时始终写出纯 Markdown，直接遍历文档结构序列化成 GFM Markdown，不依赖任何外部转换工具，也没有 HTML 中间环节。
 - **实时主题切换** — 内置九套配色加系统默认，切换即时应用到整个窗口。
 - **按目录浏览的侧边栏** — 全部/最近/收藏三个视图，支持搜索、重命名、删除。
@@ -190,6 +203,19 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 ```
 
 下面文档里统一用源码安装的 `~/.local` 路径举例，如果你是装的 `.deb`，把 `~/.local` 换成 `/usr` 就对了。
+
+### Windows（实验性，还没实测）
+
+最近刚加上了基础的 Windows 支持，**还没有在真正的 Windows 机器上编译或运行过**——跟 Linux 用的是同一套源码，只是把 KDE 相关的部分换成了 Windows 对应实现（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），在 Linux 上能干净编译过，但真机测试还没做。如果你试了，欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
+
+依赖：Qt6（MSVC 或 MinGW 套件，记得勾上 Linguist Tools 组件——可以从 [Qt 官方在线安装器](https://www.qt.io/download-qt-installer) 装）和 CMake。
+
+```powershell
+cmake -B build
+cmake --build build --config Release
+```
+
+GNOME Shell 扩展和 Debian 打包这两块在 Windows 上自然用不上——这只是编译出编辑器/笔记本本体的 `mdnote.exe`。暂时没有 Windows 安装包，编译出来的可执行文件直接运行，或者拷到任意地方都行。
 
 ### 开机自启（推荐）
 

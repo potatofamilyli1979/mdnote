@@ -11,18 +11,53 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui DBus Network LinguistTools)
-find_package(KF6Config REQUIRED)
-find_package(KF6WindowSystem REQUIRED)
-find_package(KF6GlobalAccel REQUIRED)
-find_package(KF6CoreAddons REQUIRED)
-find_package(KF6DBusAddons REQUIRED)
-find_package(LayerShellQt QUIET)
+# Qt::DBus backs KDBusService (single-instance + activation) on Linux --
+# not requested on Windows, where main_win.cpp uses QLocalSocket/
+# QLocalServer for the same purpose instead, and a default Windows Qt
+# install may not even ship the DBus module.
+if(WIN32)
+  find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui Network LinguistTools)
+else()
+  find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui DBus Network LinguistTools)
+endif()
+
+# KDE Frameworks (config storage, global shortcuts, X11/Wayland window
+# management, D-Bus service registration) and LayerShellQt (Wayland
+# panel-style pinning) are Linux-only -- Windows uses its own
+# implementations instead (ConfigManager_win.cpp, HotkeyManager_win.cpp,
+# SlideWindow.cpp's Q_OS_WIN branch), with no equivalent dependency.
+if(NOT WIN32)
+  find_package(KF6Config REQUIRED)
+  find_package(KF6WindowSystem REQUIRED)
+  find_package(KF6GlobalAccel REQUIRED)
+  find_package(KF6CoreAddons REQUIRED)
+  find_package(KF6DBusAddons REQUIRED)
+  find_package(LayerShellQt QUIET)
+endif()
+
+# main.cpp/ConfigManager.cpp/HotkeyManager.cpp are entirely different,
+# non-overlapping implementations per platform (KDE Frameworks + D-Bus
+# vs. plain Qt + Win32 APIs) -- kept as separate files rather than
+# #ifdef-ing one shared file, since there's no meaningfully shared logic
+# between them to preserve. SlideWindow.cpp and DialogUtils.cpp, by
+# contrast, are mostly-shared logic with a handful of platform-specific
+# fork points, so those stay single files with internal Q_OS_WIN guards.
+if(WIN32)
+  set(MDNOTE_PLATFORM_SOURCES
+    src/main_win.cpp
+    src/ConfigManager_win.cpp
+    src/HotkeyManager_win.cpp
+  )
+else()
+  set(MDNOTE_PLATFORM_SOURCES
+    src/main.cpp
+    src/ConfigManager.cpp
+    src/HotkeyManager.cpp
+  )
+endif()
 
 add_executable(mdnote
-  src/main.cpp
-  src/ConfigManager.cpp
-  src/HotkeyManager.cpp
+  ${MDNOTE_PLATFORM_SOURCES}
   src/SlideWindow.cpp
   src/Sidebar.cpp
   src/FileManager.cpp
@@ -41,19 +76,35 @@ add_executable(mdnote
   src/OverlayScrollBar.cpp
 )
 
+if(WIN32)
+  # No console window behind the GUI.
+  set_target_properties(mdnote PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
+
 target_link_libraries(mdnote PRIVATE
   Qt6::Core
   Qt6::Widgets
   Qt6::Gui
-  Qt6::DBus
   Qt6::Network
-  KF6::ConfigCore
-  KF6::ConfigGui
-  KF6::WindowSystem
-  KF6::GlobalAccel
-  KF6::CoreAddons
-  KF6::DBusAddons
 )
+
+if(WIN32)
+  # RegisterHotKey/UnregisterHotKey (HotkeyManager_win.cpp) and
+  # SetWindowPos/SetForegroundWindow (SlideWindow.cpp's Q_OS_WIN branch)
+  # all live in user32, a standard system library present with any
+  # Windows toolchain -- nothing extra to install for it.
+  target_link_libraries(mdnote PRIVATE user32)
+else()
+  target_link_libraries(mdnote PRIVATE
+    Qt6::DBus
+    KF6::ConfigCore
+    KF6::ConfigGui
+    KF6::WindowSystem
+    KF6::GlobalAccel
+    KF6::CoreAddons
+    KF6::DBusAddons
+  )
+endif()
 
 # English is this app's tr() source language, so it needs no translation
 # file of its own -- only the two actual translations below. Embedded
@@ -67,13 +118,17 @@ qt6_add_translations(mdnote
   RESOURCE_PREFIX "/i18n"
 )
 
-if(LayerShellQt_FOUND)
-  message(STATUS "LayerShellQt found: enabling native Wayland panel-style pinning")
-  target_link_libraries(mdnote PRIVATE LayerShellQt::Interface)
-  target_compile_definitions(mdnote PRIVATE HAVE_LAYERSHELLQT=1)
-else()
-  message(WARNING "LayerShellQt not found: Wayland sessions will fall back to plain top-level window behavior (no edge pinning/always-on-top)")
+if(NOT WIN32)
+  if(LayerShellQt_FOUND)
+    message(STATUS "LayerShellQt found: enabling native Wayland panel-style pinning")
+    target_link_libraries(mdnote PRIVATE LayerShellQt::Interface)
+    target_compile_definitions(mdnote PRIVATE HAVE_LAYERSHELLQT=1)
+  else()
+    message(WARNING "LayerShellQt not found: Wayland sessions will fall back to plain top-level window behavior (no edge pinning/always-on-top)")
+  endif()
 endif()
 
 install(TARGETS mdnote DESTINATION bin)
-install(FILES data/org.kde.mdnote.desktop DESTINATION share/applications)
+if(NOT WIN32)
+  install(FILES data/org.kde.mdnote.desktop DESTINATION share/applications)
+endif()

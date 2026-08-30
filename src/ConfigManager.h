@@ -3,12 +3,18 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#ifdef Q_OS_WIN
+#include <QSettings>
+#else
 #include <KSharedConfig>
+#endif
 
-// Central place for all user-facing settings, backed by KConfig
-// (~/.config/mdnoterc). Keep this the single source of truth for
-// anything the user can tweak; SlideWindow/Sidebar/EditorArea just
-// read/write through here rather than touching KConfig directly.
+// Central place for all user-facing settings. Keep this the single
+// source of truth for anything the user can tweak; SlideWindow/Sidebar/
+// EditorArea just read/write through here rather than touching the
+// backing store directly. Backed by KConfig (~/.config/mdnoterc) on
+// Linux, QSettings (an INI file under %APPDATA%) on Windows -- see
+// ConfigManager.cpp / ConfigManager_win.cpp.
 class ConfigManager : public QObject
 {
     Q_OBJECT
@@ -64,5 +70,9 @@ Q_SIGNALS:
     void defaultFolderChanged(const QString &path);
 
 private:
+#ifdef Q_OS_WIN
+    QSettings *m_config;
+#else
     KSharedConfigPtr m_config;
+#endif
 };

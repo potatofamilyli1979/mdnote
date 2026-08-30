@@ -4,8 +4,6 @@
 #include <QGuiApplication>
 #include <QScreen>
 
-#include <KX11Extras>
-
 #ifdef HAVE_LAYERSHELLQT
 #include <LayerShellQt/window.h>
 #endif

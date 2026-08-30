@@ -23,6 +23,9 @@ namespace LayerShellQt { class Window; }
 //    overlay layer) since layer-shell surfaces can't be freely
 //    repositioned either; show/hide is an opacity fade instead of a
 //    geometry slide.
+//  - Windows: no such restriction -- a real geometry slide-in/out like
+//    X11's, using Win32 SetWindowPos()'s HWND_TOPMOST/WS_EX_TOOLWINDOW
+//    in place of KX11Extras.
 class SlideWindow : public QWidget
 {
     Q_OBJECT
@@ -40,8 +43,12 @@ protected:
 
 private:
     void ensurePlatformConfigured();
+#ifdef Q_OS_WIN
+    void configureWindows();
+#else
     void configureX11();
     void configureWayland();
+#endif
     QRect targetGeometry() const;
     void slideIn();
     void slideOut();
@@ -72,8 +79,9 @@ private:
     QPropertyAnimation *m_geometryAnimation = nullptr;
 
     bool m_platformConfigured = false;
-    bool m_isWayland = false;
     bool m_isOpen = false;
+#ifndef Q_OS_WIN
+    bool m_isWayland = false;
     // True under GNOME/mutter, where neither KGlobalAccel nor
     // LayerShellQt work: the mdnote-quake GNOME Shell extension (see
     // gnome-extension/) drives F10 and all window geometry/animation
@@ -81,6 +89,7 @@ private:
     // not also call setFixedSize()/resize() here, or the two would fight
     // over the same window's geometry.
     bool m_externallyManaged = false;
+#endif
 
 #ifdef HAVE_LAYERSHELLQT
     LayerShellQt::Window *m_layerWindow = nullptr;
