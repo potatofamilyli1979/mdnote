@@ -85,7 +85,13 @@ public:
         // Bezier-flattening tolerance, which is too coarse at this 20px
         // radius to look round. Sampling the actual circle with many
         // points directly gives much finer control over that tradeoff.
-        constexpr int kArcSteps = 48;
+        // setMask()'s QPolygon is built and rounded in *logical* pixels,
+        // though, so the same point count looks coarser the more each
+        // logical pixel expands into physical ones -- scaling the sample
+        // count by devicePixelRatioF() keeps each step under a physical
+        // pixel on a scaled-up (100% isn't the only common setting on
+        // Windows, where 125%/150% are routine) display, not just at 1:1.
+        const int kArcSteps = qRound(48 * devicePixelRatioF());
         const QRectF r(rect());
 
         QPolygon polygon;

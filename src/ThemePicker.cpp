@@ -111,7 +111,12 @@ protected:
     {
         QWidget::resizeEvent(event);
         if (width() > 0 && height() > 0) {
-            setMask(QRegion(roundedRectPolygon(rect(), m_radius, kPopupArcSteps)));
+            // See RoundedCard::applyMask() in SlideWindow.cpp for why
+            // this is scaled by devicePixelRatioF() -- the mask polygon
+            // is built and rounded in logical pixels, so a fixed step
+            // count looks coarser the more each logical pixel expands
+            // into physical ones on a scaled-up display.
+            setMask(QRegion(roundedRectPolygon(rect(), m_radius, qRound(kPopupArcSteps * devicePixelRatioF()))));
         }
     }
     void paintEvent(QPaintEvent *) override
@@ -119,7 +124,7 @@ protected:
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         QPainterPath path;
-        path.addPolygon(roundedRectPolygon(rect().adjusted(0, 0, -1, -1), m_radius, kPopupArcSteps));
+        path.addPolygon(roundedRectPolygon(rect().adjusted(0, 0, -1, -1), m_radius, qRound(kPopupArcSteps * devicePixelRatioF())));
         painter.fillPath(path, QColor(255, 255, 255));
         painter.setPen(QPen(QColor(0, 0, 0, 31), 1));
         painter.drawPath(path);
