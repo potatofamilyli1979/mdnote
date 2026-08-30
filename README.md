@@ -32,7 +32,9 @@ sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev \
 
 ### Build & install
 
-No root needed to install into `~/.local` — just make sure `~/.local/bin` is on your `PATH`:
+Two ways to install: build from source into your own home directory (no root needed), or build a Debian package (installs system-wide). Either way ends up with a working `mdnote` binary and `.desktop` entry — just at different paths.
+
+**From source, into `~/.local`** (make sure `~/.local/bin` is on your `PATH`):
 
 ```bash
 cmake -B build
@@ -40,7 +42,20 @@ cmake --build build -j$(nproc)
 cmake --install build --prefix ~/.local
 ```
 
-Run `kbuildsycoca6` afterward so KDE picks up the newly installed `org.kde.mdnote.desktop`.
+This installs the binary to `~/.local/bin/mdnote` and the desktop entry to `~/.local/share/applications/org.kde.mdnote.desktop`. Run `kbuildsycoca6` afterward so KDE picks up the newly installed entry.
+
+**As a Debian package** (installs to `/usr/bin/mdnote` and `/usr/share/applications/` instead):
+
+```bash
+sudo apt install debhelper cmake qt6-base-dev qt6-tools-dev \
+  libkf6config-dev libkf6windowsystem-dev libkf6globalaccel-dev \
+  libkf6coreaddons-dev libkf6dbusaddons-dev liblayershellqtinterface-dev \
+  libglib2.0-bin
+dpkg-buildpackage -us -uc -b
+sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
+```
+
+The rest of this README uses the from-source `~/.local` paths — substitute `/usr` for `~/.local` throughout if you installed via the `.deb`.
 
 ### Autostart (recommended)
 
@@ -48,13 +63,13 @@ mdnote is meant to sit in the background waiting for F10, not be launched by han
 
 ```bash
 mkdir -p ~/.config/autostart
-cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/
+cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/   # or /usr/share/applications/ if installed via .deb
 echo "X-GNOME-Autostart-enabled=true" >> ~/.config/autostart/org.kde.mdnote.desktop
 ```
 
 ### Running
 
-`~/.local/bin/mdnote` starts with no visible window, waiting for F10. On first run it registers the shortcut with `KGlobalAccel`; you can see it under Plasma's System Settings → Shortcuts → mdnote. Under GNOME, install the `gnome-shell-extension-mdnote-quake` package and enable it (`gnome-extensions enable mdnote-quake@localhost`, then log out and back in) for the same F10 toggle.
+`mdnote` starts with no visible window, waiting for F10. On first run it registers the shortcut with `KGlobalAccel`; you can see it under Plasma's System Settings → Shortcuts → mdnote. Under GNOME, install the `gnome-shell-extension-mdnote-quake` package and enable it (`gnome-extensions enable mdnote-quake@localhost`, then log out and back in) for the same F10 toggle.
 
 Single-instance behavior is handled by KDE Frameworks' `KDBusService`, which also registers `org.kde.mdnote` on the session bus.
 
@@ -76,7 +91,7 @@ cmake --build build --target update_translations
 
 ### Rich-text commands (normal mode)
 
-The toolbar's Paragraph/Format menus (and the normal-mode right-click menu) are only enabled in normal mode, since they operate on rich-text formatting with no source-mode equivalent.
+Formatting commands live in the right-click context menu while in normal mode (the toolbar itself only has sidebar toggle / search / theme / zoom / mode-switch / save) — right-click gives you Bold/Italic/etc., a Paragraph submenu (headings, promote/demote), and an Insert submenu (image, table, code block, horizontal rule).
 
 Implemented: headings 1–6, paragraph, promote/demote heading, blockquote, ordered/unordered lists, horizontal rule, code blocks, tables, bold/italic/underline/strikethrough/inline code, links, clear formatting.
 
@@ -151,7 +166,9 @@ Wayland 会话下运行时建议装上 `qt6-wayland`。
 
 ### 构建 & 安装
 
-装到 `~/.local` 不需要 root，记得把 `~/.local/bin` 加进 `PATH`：
+两种装法：从源码编译装到自己的家目录（不需要 root），或者打成 Debian 包装到系统目录。两种最后都会有一个能跑的 `mdnote` 二进制和 `.desktop` 文件，只是路径不一样。
+
+**从源码装到 `~/.local`**（记得把 `~/.local/bin` 加进 `PATH`）：
 
 ```bash
 cmake -B build
@@ -159,7 +176,20 @@ cmake --build build -j$(nproc)
 cmake --install build --prefix ~/.local
 ```
 
-装完跑一下 `kbuildsycoca6`，让 KDE 识别新装的 `org.kde.mdnote.desktop`。
+这样二进制在 `~/.local/bin/mdnote`，desktop 文件在 `~/.local/share/applications/org.kde.mdnote.desktop`。装完跑一下 `kbuildsycoca6`，让 KDE 识别新装的 desktop 文件。
+
+**打 Debian 包**（装到 `/usr/bin/mdnote` 和 `/usr/share/applications/`，不是 `~/.local`）：
+
+```bash
+sudo apt install debhelper cmake qt6-base-dev qt6-tools-dev \
+  libkf6config-dev libkf6windowsystem-dev libkf6globalaccel-dev \
+  libkf6coreaddons-dev libkf6dbusaddons-dev liblayershellqtinterface-dev \
+  libglib2.0-bin
+dpkg-buildpackage -us -uc -b
+sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
+```
+
+下面文档里统一用源码安装的 `~/.local` 路径举例，如果你是装的 `.deb`，把 `~/.local` 换成 `/usr` 就对了。
 
 ### 开机自启（推荐）
 
@@ -167,13 +197,13 @@ mdnote 是常驻后台等 F10 的模式，不是"要用了再手动开"的程序
 
 ```bash
 mkdir -p ~/.config/autostart
-cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/
+cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/   # 装的 .deb 就用 /usr/share/applications/ 下的那份
 echo "X-GNOME-Autostart-enabled=true" >> ~/.config/autostart/org.kde.mdnote.desktop
 ```
 
 ### 运行
 
-`~/.local/bin/mdnote` 启动后不会显示窗口，在后台等 F10。第一次运行会向 `KGlobalAccel` 注册好快捷键，「系统设置→快捷键→mdnote」能看到。GNOME 下需要额外装 `gnome-shell-extension-mdnote-quake` 包并启用（`gnome-extensions enable mdnote-quake@localhost`，然后重新登录一次）才有同样的 F10 呼出。
+`mdnote` 启动后不会显示窗口，在后台等 F10。第一次运行会向 `KGlobalAccel` 注册好快捷键，「系统设置→快捷键→mdnote」能看到。GNOME 下需要额外装 `gnome-shell-extension-mdnote-quake` 包并启用（`gnome-extensions enable mdnote-quake@localhost`，然后重新登录一次）才有同样的 F10 呼出。
 
 单实例逻辑由 KDE Frameworks 的 `KDBusService` 负责，同时会在会话总线上注册 `org.kde.mdnote` 这个 D-Bus 服务名。
 
@@ -195,7 +225,7 @@ cmake --build build --target update_translations
 
 ### 正常模式的富文本命令
 
-工具栏的"段落""格式"下拉菜单（以及正常模式下的右键菜单）只在正常模式可用，因为它们直接操作富文本格式，源码模式下没有对应操作。
+正常模式下，格式相关的命令都在右键菜单里（工具栏本身只有侧栏开关/搜索/主题/缩放/模式切换/保存这几个按钮）——右键能看到加粗/斜体等格式项、"段落"子菜单（标题、提升/降低标题级别）、"插入"子菜单（图像、表格、代码块、水平分割线）。
 
 已实现：一~六级标题、段落、提升/降低标题级别、引用、有序/无序列表、水平分割线、代码块、表格、加粗/斜体/下划线/删除线/行内代码、超链接、清除样式。
 
