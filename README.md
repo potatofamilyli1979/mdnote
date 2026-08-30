@@ -12,7 +12,7 @@ A Yakuake-style, slide-out Markdown notebook for Linux. Press F10, jot something
 
 ### Features
 
-- **Global F10 toggle** — slides in from the right edge, slides back out. Native `KGlobalAccel` binding on KDE Plasma; a companion GNOME Shell extension provides the same toggle under GNOME/Wayland, where ordinary clients can't register global shortcuts or force their own window placement. Experimental Windows support (see [Windows](#windows-experimental-needs-testing)) uses `RegisterHotKey` instead.
+- **Global F10 toggle** — slides in from the right edge, slides back out. Native `KGlobalAccel` binding on KDE Plasma; a companion GNOME Shell extension provides the same toggle under GNOME/Wayland, where ordinary clients can't register global shortcuts or force their own window placement. Experimental Windows support (see [Windows](#windows-experimental)) uses `RegisterHotKey` instead.
 - **Two editing modes** — source mode (plain Markdown text, syntax-highlighted) and normal mode (WYSIWYG rich text), switchable at any time. Saving always writes plain Markdown, via a serializer that walks the document directly to GFM Markdown — no external converter, no HTML intermediate.
 - **Live theme switching** — nine built-in color presets plus the system default, applied instantly across the whole window.
 - **Directory-based sidebar** — browse a folder of notes by all/recent/starred, with search, rename, and delete.
@@ -57,18 +57,26 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 
 The rest of this README uses the from-source `~/.local` paths — substitute `/usr` for `~/.local` throughout if you installed via the `.deb`.
 
-### Windows (experimental, needs testing)
+### Windows (experimental)
 
-Basic Windows support was added recently and **has not yet been built or run on an actual Windows machine** — it compiles cleanly against the same source tree on Linux with the KDE-specific pieces swapped out (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`), but real testing is still needed. [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) very welcome if you try it.
+Basic Windows support was added recently (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`) and has been built and run successfully on Windows 10/11. One known rough edge: the main window's rounded corners look more faceted than on Linux (see [issue tracker](https://github.com/potatofamilyli1979/mdnote/issues) for status) -- everything else works. [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) welcome.
 
 Prerequisites: Qt6 (MSVC or MinGW kit, including the Linguist Tools component — installable via the [Qt online installer](https://www.qt.io/download-qt-installer)) and CMake.
 
 ```powershell
-cmake -B build
+cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\mingw_64"
 cmake --build build --config Release
 ```
 
-The GNOME Shell extension and Debian packaging obviously don't apply here — this builds just the `mdnote.exe` editor/notebook itself. There's no Windows installer yet; run the built executable directly, or copy it wherever you like.
+(Substitute your actual Qt install path/kit; add `-G "MinGW Makefiles"` for a MinGW kit, or run from a "x64 Native Tools Command Prompt for VS" for an MSVC kit.)
+
+The build won't run as-is: Qt's DLLs aren't on Windows' default search path, so run Qt's deployment tool against the built executable once, from the matching kit's `bin` directory:
+
+```powershell
+C:\Qt\6.8.0\mingw_64\bin\windeployqt6.exe build\mdnote.exe
+```
+
+The GNOME Shell extension and Debian packaging obviously don't apply here — this builds just the `mdnote.exe` editor/notebook itself. There's no Windows installer yet; run the deployed executable directly, or copy the whole output folder wherever you like.
 
 ### Autostart (recommended)
 
@@ -159,7 +167,7 @@ Yakuake 风格、从右侧滑出的 Markdown 速记本。按 F10 呼出，随手
 
 ### 功能
 
-- **全局 F10 呼出/收起** — 从屏幕右侧滑入滑出。KDE Plasma 下用原生 `KGlobalAccel` 绑定；GNOME/Wayland 下普通客户端既不能注册全局快捷键，也不能强制自己的窗口位置，所以配了一个同名的 GNOME Shell 扩展来实现同样的 F10 呼出。实验性的 Windows 支持（见[Windows](#windows实验性还没实测)）用的是 `RegisterHotKey`。
+- **全局 F10 呼出/收起** — 从屏幕右侧滑入滑出。KDE Plasma 下用原生 `KGlobalAccel` 绑定；GNOME/Wayland 下普通客户端既不能注册全局快捷键，也不能强制自己的窗口位置，所以配了一个同名的 GNOME Shell 扩展来实现同样的 F10 呼出。实验性的 Windows 支持（见[Windows](#windows实验性)）用的是 `RegisterHotKey`。
 - **源码/正常两种编辑模式** — 源码模式是带语法高亮的纯 Markdown 文本，正常模式是所见即所得的富文本，随时可以切换。保存时始终写出纯 Markdown，直接遍历文档结构序列化成 GFM Markdown，不依赖任何外部转换工具，也没有 HTML 中间环节。
 - **实时主题切换** — 内置九套配色加系统默认，切换即时应用到整个窗口。
 - **按目录浏览的侧边栏** — 全部/最近/收藏三个视图，支持搜索、重命名、删除。
@@ -204,18 +212,26 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 
 下面文档里统一用源码安装的 `~/.local` 路径举例，如果你是装的 `.deb`，把 `~/.local` 换成 `/usr` 就对了。
 
-### Windows（实验性，还没实测）
+### Windows（实验性）
 
-最近刚加上了基础的 Windows 支持，**还没有在真正的 Windows 机器上编译或运行过**——跟 Linux 用的是同一套源码，只是把 KDE 相关的部分换成了 Windows 对应实现（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），在 Linux 上能干净编译过，但真机测试还没做。如果你试了，欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
+最近刚加上了基础的 Windows 支持（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），已经在 Windows 10/11 上编译运行成功。已知的一个小瑕疵：主窗口圆角看起来比 Linux 上更有棱角（进展见 [issue 列表](https://github.com/potatofamilyli1979/mdnote/issues)），其他功能正常。欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
 
 依赖：Qt6（MSVC 或 MinGW 套件，记得勾上 Linguist Tools 组件——可以从 [Qt 官方在线安装器](https://www.qt.io/download-qt-installer) 装）和 CMake。
 
 ```powershell
-cmake -B build
+cmake -B build -DCMAKE_PREFIX_PATH="C:\Qt\6.8.0\mingw_64"
 cmake --build build --config Release
 ```
 
-GNOME Shell 扩展和 Debian 打包这两块在 Windows 上自然用不上——这只是编译出编辑器/笔记本本体的 `mdnote.exe`。暂时没有 Windows 安装包，编译出来的可执行文件直接运行，或者拷到任意地方都行。
+（路径换成你实际的 Qt 安装位置/套件；MinGW 套件加 `-G "MinGW Makefiles"`，MSVC 套件要在 "x64 Native Tools Command Prompt for VS" 里跑。）
+
+编译完不能直接运行：Qt 的 DLL 不在 Windows 默认搜索路径里，需要用对应套件 `bin` 目录下的部署工具跑一次：
+
+```powershell
+C:\Qt\6.8.0\mingw_64\bin\windeployqt6.exe build\mdnote.exe
+```
+
+GNOME Shell 扩展和 Debian 打包这两块在 Windows 上自然用不上——这只是编译出编辑器/笔记本本体的 `mdnote.exe`。暂时没有 Windows 安装包，部署好之后可执行文件直接运行，或者把整个输出文件夹拷到任意地方都行。
 
 ### 开机自启（推荐）
 
