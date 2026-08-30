@@ -58,6 +58,15 @@ endif()
 
 add_executable(mdnote
   ${MDNOTE_PLATFORM_SOURCES}
+  # ConfigManager.h/HotkeyManager.h have no same-basename .cpp among the
+  # Windows sources (only ConfigManager_win.cpp/HotkeyManager_win.cpp),
+  # which is enough to make AUTOMOC's header/moc pairing unreliable on
+  # some generator+compiler combinations -- listing them explicitly
+  # here removes any ambiguity about whether they're seen at all.
+  # Harmless on Linux, where the matching .cpp already makes this
+  # unambiguous.
+  src/ConfigManager.h
+  src/HotkeyManager.h
   src/SlideWindow.cpp
   src/Sidebar.cpp
   src/FileManager.cpp
