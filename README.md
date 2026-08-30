@@ -59,7 +59,7 @@ The rest of this README uses the from-source `~/.local` paths — substitute `/u
 
 ### Windows (experimental)
 
-Basic Windows support was added recently (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`) and has been built and run successfully on Windows 10/11. One known rough edge: the main window's rounded corners look more faceted than on Linux (see [issue tracker](https://github.com/potatofamilyli1979/mdnote/issues) for status) -- everything else works. [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) welcome.
+Basic Windows support was added recently (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`, rounded corners via `DwmSetWindowAttribute`) and has been built and run successfully on Windows 10/11 -- see [Known limitations](#known-limitations) for the one visible platform difference (all four corners round on Windows, rather than just the left two). [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) welcome.
 
 Prerequisites: Qt6 (MSVC or MinGW kit, including the Linguist Tools component — installable via the [Qt online installer](https://www.qt.io/download-qt-installer)) and CMake.
 
@@ -128,6 +128,7 @@ Not implemented (Qt's plain rich-text framework doesn't support these natively, 
 ### Known limitations
 
 - **No slide animation under Wayland** — KWin/mutter don't let a client freely move its own top-level window, so the window is pinned to the screen edge via `LayerShellQt` instead, and show/hide is an instant toggle rather than an animated transition. X11 sessions get a real position-slide animation.
+- **Windows rounds all four corners, not just the left two** — Linux/GNOME draws its own rounded-left-edge/square-right-edge card via a hard-edged pixel mask (the only option under GNOME's externally-managed setup); Windows instead opts into real, antialiased compositor rounding via `DwmSetWindowAttribute`, which only supports uniform corners on all four sides, not a per-corner choice. Windows 10 has no such API at all and the window stays square there.
 - Opening a file uses Qt's own `QTextDocument::setMarkdown()`, which doesn't cover 100% of GFM (some extended syntax may not round-trip) — fine for everyday notes, but not a full CommonMark/GFM implementation.
 - No dedicated settings UI yet beyond the theme picker — width ratio, default folder, and a few other options are config-file only (see below).
 
@@ -214,7 +215,7 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 
 ### Windows（实验性）
 
-最近刚加上了基础的 Windows 支持（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），已经在 Windows 10/11 上编译运行成功。已知的一个小瑕疵：主窗口圆角看起来比 Linux 上更有棱角（进展见 [issue 列表](https://github.com/potatofamilyli1979/mdnote/issues)），其他功能正常。欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
+最近刚加上了基础的 Windows 支持（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`，圆角用 `DwmSetWindowAttribute`），已经在 Windows 10/11 上编译运行成功——唯一一个能看出来的平台差异见下面[已知限制](#已知限制)（Windows 下四个角都是圆的，不像 Linux 只圆左边两个角）。欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
 
 依赖：Qt6（MSVC 或 MinGW 套件，记得勾上 Linguist Tools 组件——可以从 [Qt 官方在线安装器](https://www.qt.io/download-qt-installer) 装）和 CMake。
 
@@ -283,6 +284,7 @@ cmake --build build --target update_translations
 ### 已知限制
 
 - **Wayland 下没有滑动动画** — KWin/mutter 不允许客户端自由移动自己的顶层窗口，所以用 `LayerShellQt` 把窗口锚定在屏幕边缘，呼出/收起是直接显示/隐藏，没有过渡动画。X11 会话下是真正的位移滑动动画。
+- **Windows 下四个角都是圆的，不只是左边两个** — Linux/GNOME 是自己拿硬边界像素遮罩画出"左边圆角、右边直角"的卡片效果（GNOME 这种外部托管窗口的场景下只能这么做）；Windows 换成了 `DwmSetWindowAttribute` 让系统合成器做真正抗锯齿的圆角，但这个 API 只能四个角一起设置，没法单独指定某一边。Windows 10 上没有这个 API，窗口就还是直角。
 - 打开文件用的是 Qt 自带的 `QTextDocument::setMarkdown()`，没有 100% 覆盖 GFM 扩展语法，日常笔记场景够用，但不是完整的 CommonMark/GFM 实现。
 - 除了主题选择，暂时没有独立的设置界面 — 窗口宽度比例、默认文件夹等选项目前只能改配置文件（见下）。
 
