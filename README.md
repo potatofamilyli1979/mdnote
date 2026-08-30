@@ -1,21 +1,38 @@
 # mdnote
 
-Yakuake 风格、从右侧滑出的 Markdown 速记本。F10 呼出/收起，源码模式（纯 Markdown 文本）与正常模式（富文本，基于 Qt 原生的 `setMarkdown`/`toMarkdown` 双向转换）之间切换，笔记就是普通的 `.md` 文件。
+<p align="center"><a href="#english">English</a> · <a href="#简体中文">简体中文</a></p>
 
-## 依赖（Debian testing 已确认可用的包名）
+---
+
+## English
+
+A Yakuake-style, slide-out Markdown notebook for Linux. Press F10, jot something down, press F10 again — it's gone. Notes are plain `.md` files on disk; there's no database and no proprietary format.
+
+![Normal mode, English UI](docs/screenshots/normal-mode-en.png)
+
+### Features
+
+- **Global F10 toggle** — slides in from the right edge, slides back out. Native `KGlobalAccel` binding on KDE Plasma; a companion GNOME Shell extension provides the same toggle under GNOME/Wayland, where ordinary clients can't register global shortcuts or force their own window placement.
+- **Two editing modes** — source mode (plain Markdown text, syntax-highlighted) and normal mode (WYSIWYG rich text), switchable at any time. Saving always writes plain Markdown, via a serializer that walks the document directly to GFM Markdown — no external converter, no HTML intermediate.
+- **Live theme switching** — nine built-in color presets plus the system default, applied instantly across the whole window.
+- **Directory-based sidebar** — browse a folder of notes by all/recent/starred, with search, rename, and delete.
+- **Multi-language UI** — English, Simplified Chinese, and Traditional Chinese, switched automatically by the system locale (see [Localization](#localization)).
+
+### Dependencies
+
+Package names confirmed on Debian testing:
 
 ```bash
-sudo apt install build-essential cmake qt6-base-dev \
+sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev \
   libkf6config-dev libkf6windowsystem-dev libkf6globalaccel-dev \
-  libkf6coreaddons-dev libkf6dbusaddons-dev liblayershellqtinterface-dev \
-  pandoc
+  libkf6coreaddons-dev libkf6dbusaddons-dev liblayershellqtinterface-dev
 ```
 
-`pandoc` is a runtime-optional dependency (see [保存 markdown 的转换管线](#保存-markdown-的转换管线-语义化-html--pandoc) below) — the app builds and runs without it, saving just falls back to Qt's own (occasionally buggy) markdown writer.
+`qt6-wayland` is recommended at runtime on Wayland sessions.
 
-## 构建 & 安装
+### Build & install
 
-装到 `~/.local` 不需要 root，`~/.local/bin` 记得加入 PATH：
+No root needed to install into `~/.local` — just make sure `~/.local/bin` is on your `PATH`:
 
 ```bash
 cmake -B build
@@ -23,11 +40,11 @@ cmake --build build -j$(nproc)
 cmake --install build --prefix ~/.local
 ```
 
-安装后跑一下 `kbuildsycoca6` 让 KDE 识别新装的 `org.kde.mdnote.desktop`。
+Run `kbuildsycoca6` afterward so KDE picks up the newly installed `org.kde.mdnote.desktop`.
 
-## 开机自启（推荐）
+### Autostart (recommended)
 
-mdnote 是常驻后台等 F10 的模式,不是"要用了再手动开"的程序,所以建议做成开机自启,登录后就一直在后台待命：
+mdnote is meant to sit in the background waiting for F10, not be launched by hand each time — enabling it at login is the intended way to run it:
 
 ```bash
 mkdir -p ~/.config/autostart
@@ -35,49 +52,50 @@ cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/
 echo "X-GNOME-Autostart-enabled=true" >> ~/.config/autostart/org.kde.mdnote.desktop
 ```
 
-## 运行 & F10
+### Running
 
-`~/.local/bin/mdnote` 启动后不会显示窗口,在后台等 F10。第一次运行会在 kglobalaccel 里注册好 F10,「系统设置→快捷键→mdnote」能看到。
+`~/.local/bin/mdnote` starts with no visible window, waiting for F10. On first run it registers the shortcut with `KGlobalAccel`; you can see it under Plasma's System Settings → Shortcuts → mdnote. Under GNOME, install the `gnome-shell-extension-mdnote-quake` package and enable it (`gnome-extensions enable mdnote-quake@localhost`, then log out and back in) for the same F10 toggle.
 
-**踩坑记录（如果你也遇到"F10 在系统设置里显示已绑定,但按了没反应"）**：根因是 `HotkeyManager` 里给 `QAction` 设置了一个 `isConfigurationAction` 属性 —— 这个属性名会被 kglobalaccel 识别为"这只是设置界面里占位用的配置动作,不是真的要触发的全局快捷键",于是快捷键会被正常记录/在设置里显示,但 kglobalaccel **永远不会把它标记为"活跃"、也永远不会真的把按键事件投递给它**。删掉那一行属性设置后就正常了。如果你以后自己加新的全局快捷键 `QAction`,不要加这个属性。
+Single-instance behavior is handled by KDE Frameworks' `KDBusService`, which also registers `org.kde.mdnote` on the session bus.
 
-另外把单实例逻辑从手写的 `QLocalSocket`/`QLocalServer` 换成了 KDE Frameworks 的 `KDBusService`,这样才会在会话总线上注册 `org.kde.mdnote` 这个正式的 D-Bus 服务名,同时也顺带修掉了启动时那条 "Failed to register with host portal ... App info not found" 的警告。
+### Localization
 
-## 正常模式的富文本命令（段落 / 格式 菜单）
+The UI's source language is English; Simplified and Traditional Chinese translations are bundled and selected automatically from the system locale (Simplified for `zh_Hans`/`zh_CN`/`zh_SG`-style locales, Traditional for `zh_Hant`/`zh_TW`/`zh_HK`), falling back to English for anything else. To force a specific language regardless of the system locale:
 
-工具栏的"段落""格式"两个按钮下拉菜单，只在正常（预览）模式下可用，源码模式下会置灰——这些命令直接操作富文本的 `QTextCharFormat`/`QTextBlockFormat`，在纯文本源码里没有对应操作。
+```bash
+LANGUAGE=en_US LC_ALL=C mdnote      # force English
+LANGUAGE=zh_CN LC_ALL=zh_CN.UTF-8 mdnote   # force Simplified Chinese
+LANGUAGE=zh_TW LC_ALL=zh_TW.UTF-8 mdnote   # force Traditional Chinese
+```
 
-已实现：一~六级标题、段落、提升/降低标题级别、引用、有序/无序列表、水平分割线、代码块、表格、加粗/斜体/下划线/删除线/行内代码、超链接、清除样式。
+Translation sources live in `translations/*.ts` (Qt Linguist format); after adding or changing any UI string, run the `update_translations` CMake target to resync them:
 
-菜单里显示的快捷键（Ctrl+1、Ctrl+B 之类）目前只有加粗/斜体/下划线是真的能按键触发的——那是 `QTextEdit` 自带的原生行为，不是我们注册的。其余的快捷键文字目前只是仿 Typora 菜单画的提示文本，还没有真正接上全局按键，需要点菜单才能触发。如果这一点体验上觉得别扭，之后可以把这些也接成真正可用的快捷键。
+```bash
+cmake --build build --target update_translations
+```
 
-没做的（Qt 的纯文本框架原生不支持,或者需要额外渲染引擎才能做，工作量明显更大）：任务列表（勾选框交互）、公式块（LaTeX 渲染）、警告框、代码工具子菜单、链接引用、脚注、内容目录自动生成、YAML Front Matter、注释语法。这些 Typora 有而这里暂时没做。
+### Rich-text commands (normal mode)
 
-## 图片与链接（正常模式）
+The toolbar's Paragraph/Format menus (and the normal-mode right-click menu) are only enabled in normal mode, since they operate on rich-text formatting with no source-mode equivalent.
 
-- 网络图片（`![](http://...)`）现在会异步下载后显示，加载完成前是个占位框。本地文件路径的图片走 Qt 自带的本地资源解析，不受影响。
-- 链接默认单击是把光标移进去（编辑态文本框的标准行为，方便你点进链接文字修改），**按住 Ctrl 再点击**才会用系统默认浏览器打开链接。鼠标悬停时按住 Ctrl 会看到指针变成手型、并显示链接地址的提示。
+Implemented: headings 1–6, paragraph, promote/demote heading, blockquote, ordered/unordered lists, horizontal rule, code blocks, tables, bold/italic/underline/strikethrough/inline code, links, clear formatting.
 
-## 保存 markdown 的转换管线（语义化 HTML + pandoc）
+Of the shortcuts shown in the menus, only Bold/Italic/Underline are currently wired to real key bindings (native `QTextEdit` behavior) — the rest are menu-only for now.
 
-正常模式保存/切回源码模式时，不再直接用 `QTextDocument::toMarkdown()`。原因是实测出的两个真 bug：代码块紧跟表格会在一次转换里互相污染，空表格会导出成裸的 `||||`。查证过程见下，结论是：
+Not implemented (Qt's plain rich-text framework doesn't support these natively, or they'd need a dedicated rendering engine): interactive task-list checkboxes, LaTeX math blocks, admonition/callout boxes, footnotes, auto-generated table of contents, YAML front matter, comment syntax.
 
-1. `QTextDocument::toHtml()` 生成的是"所见即所得编辑器"风格的 HTML（加粗用内联 `style="font-weight:700"`、表头就是普通 `<td>`、代码块是 `<pre><span style=...>`），标准的 HTML→Markdown 转换器认不出这些非语义化标签。
-2. 试过 [html2md](https://github.com/tim-gromeyer/html2md)，即使喂给它干净的语义化 HTML，表格还是会丢列——这是它自己表格解析逻辑的 bug，换输入救不了。
-3. [`QBasicHtmlExporter`](https://gitlab.com/Open-App-Library/QBasicHtmlExporter)（2019 年的老项目，未指定协议）思路是对的，但直接用有顾虑（license 不明确、Qt6 下编译不过、标题/代码块标签也有问题），所以没有直接拿它的代码，而是照着"QTextDocument → 语义化 HTML"这个思路自己写了一个更小的：[`SemanticHtmlExporter.cpp`](src/SemanticHtmlExporter.cpp)，只覆盖这个 app 实际会用到的格式（标题、粗斜体/删除线/行内代码、链接、图片、引用、有序/无序列表、分割线、表格、代码块）。
-4. 最后一棒交给 `pandoc`（`-f html -t gfm`，`QProcess` 子进程调用），实测过表格、代码块围栏、粗体/斜体/删除线、引用、列表、分割线、链接，round-trip 两次输出完全一致（不再像 Qt 自带那样每转一次就多损坏一点）。
+### Images & links (normal mode)
 
-如果启动时找不到 `pandoc`（`QStandardPaths::findExecutable`），会自动退回到 `QTextDocument::toMarkdown()`——功能不受影响，只是又暴露在原来那两个 bug 面前。
+- Remote images (`![](http://...)`) load asynchronously, showing a placeholder box until they're ready. Local file paths resolve immediately via Qt's own resource loading.
+- A plain click on a link moves the cursor into it (so you can edit the link text); **Ctrl+click** opens it in your default browser. Hovering while holding Ctrl shows a hand cursor and the link's target.
 
-## 已知限制 / 后续可以打磨的点
+### Known limitations
 
-- **Wayland 下没有真正的位移滑动动画**：KWin Wayland 不允许客户端自由摆放/移动自己的顶层窗口，所以用了 `LayerShellQt` 把窗口锚定在屏幕右侧（上下贴边、右边贴边）。呼出/收起目前是**直接显示/隐藏**（没有过渡动画——最初想做透明度淡入淡出，但这个 QPA 插件不支持 `setWindowOpacity()`，日志会打「This plugin does not support setting window opacity」，动画自然也就没效果）。X11 会话下走的是另一条路径，是真正的位移滑动动画。如果想要 Wayland 下也有过渡效果，大概率得改成动画 `LayerShellQt::Window` 的尺寸（比如宽度从 0 展开）而不是透明度。
-- 打开文件（markdown → 富文本）依然用的是 Qt `QTextDocument::setMarkdown()`，不是 100% 覆盖 GFM（比如脚注、部分扩展语法可能丢失），日常笔记场景应该够用；保存这一头已经换成了上面说的 语义化 HTML + pandoc 管线。
-- 历史文档列表目前直接按文件夹里 `.md` 文件的修改时间排序,没有单独维护"最近打开"的索引 — 更简单可靠，但如果你想要的是"最近打开"而不是"最近修改"的顺序,需要另外加一个小索引。
-- 侧边栏折叠、失焦自动隐藏(`hideOnFocusLost`)选项在 `ConfigManager` 里已经留了接口,但还没有接到设置界面上,目前只能改 `~/.config/mdnoterc` 里的值。
-- 还没有设置界面(宽度比例、默认文件夹等目前只能手改 `~/.config/mdnoterc`)。
+- **No slide animation under Wayland** — KWin/mutter don't let a client freely move its own top-level window, so the window is pinned to the screen edge via `LayerShellQt` instead, and show/hide is an instant toggle rather than an animated transition. X11 sessions get a real position-slide animation.
+- Opening a file uses Qt's own `QTextDocument::setMarkdown()`, which doesn't cover 100% of GFM (some extended syntax may not round-trip) — fine for everyday notes, but not a full CommonMark/GFM implementation.
+- No dedicated settings UI yet beyond the theme picker — width ratio, default folder, and a few other options are config-file only (see below).
 
-## 配置文件
+### Config file
 
 `~/.config/mdnoterc`:
 
@@ -87,8 +105,137 @@ widthRatio=0.5
 animationDurationMs=220
 hideOnFocusLost=false
 lastMode=normal
+themeKey=
 
 [Folders]
 defaultFolder=/home/you/Documents/Notes
 recentFolders=...
+
+[Sidebar]
+open=false
+sortKey=mtime
+sortAscending=false
 ```
+
+### License
+
+GPL-3.0-or-later — see [LICENSE](LICENSE). The GNOME Shell extension (`gnome-extension/quake-mode.js`) is adapted from [Quake Terminal](https://github.com/diegodario88/quake-terminal), used under the same license.
+
+---
+
+## 简体中文
+
+Yakuake 风格、从右侧滑出的 Markdown 速记本。按 F10 呼出，随手记点东西，再按一下 F10 收起。笔记就是硬盘上普通的 `.md` 文件，没有数据库，没有私有格式。
+
+![正常模式，中文界面](docs/screenshots/normal-mode-zh.png)
+
+### 功能
+
+- **全局 F10 呼出/收起** — 从屏幕右侧滑入滑出。KDE Plasma 下用原生 `KGlobalAccel` 绑定；GNOME/Wayland 下普通客户端既不能注册全局快捷键，也不能强制自己的窗口位置，所以配了一个同名的 GNOME Shell 扩展来实现同样的 F10 呼出。
+- **源码/正常两种编辑模式** — 源码模式是带语法高亮的纯 Markdown 文本，正常模式是所见即所得的富文本，随时可以切换。保存时始终写出纯 Markdown，直接遍历文档结构序列化成 GFM Markdown，不依赖任何外部转换工具，也没有 HTML 中间环节。
+- **实时主题切换** — 内置九套配色加系统默认，切换即时应用到整个窗口。
+- **按目录浏览的侧边栏** — 全部/最近/收藏三个视图，支持搜索、重命名、删除。
+- **多语言界面** — 英文、简体中文、繁体中文，跟随系统语言自动切换（见下方[多语言](#多语言)）。
+
+### 依赖
+
+Debian testing 上确认可用的包名：
+
+```bash
+sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev \
+  libkf6config-dev libkf6windowsystem-dev libkf6globalaccel-dev \
+  libkf6coreaddons-dev libkf6dbusaddons-dev liblayershellqtinterface-dev
+```
+
+Wayland 会话下运行时建议装上 `qt6-wayland`。
+
+### 构建 & 安装
+
+装到 `~/.local` 不需要 root，记得把 `~/.local/bin` 加进 `PATH`：
+
+```bash
+cmake -B build
+cmake --build build -j$(nproc)
+cmake --install build --prefix ~/.local
+```
+
+装完跑一下 `kbuildsycoca6`，让 KDE 识别新装的 `org.kde.mdnote.desktop`。
+
+### 开机自启（推荐）
+
+mdnote 是常驻后台等 F10 的模式，不是"要用了再手动开"的程序，建议做成开机自启，登录后就一直在后台待命：
+
+```bash
+mkdir -p ~/.config/autostart
+cp ~/.local/share/applications/org.kde.mdnote.desktop ~/.config/autostart/
+echo "X-GNOME-Autostart-enabled=true" >> ~/.config/autostart/org.kde.mdnote.desktop
+```
+
+### 运行
+
+`~/.local/bin/mdnote` 启动后不会显示窗口，在后台等 F10。第一次运行会向 `KGlobalAccel` 注册好快捷键，「系统设置→快捷键→mdnote」能看到。GNOME 下需要额外装 `gnome-shell-extension-mdnote-quake` 包并启用（`gnome-extensions enable mdnote-quake@localhost`，然后重新登录一次）才有同样的 F10 呼出。
+
+单实例逻辑由 KDE Frameworks 的 `KDBusService` 负责，同时会在会话总线上注册 `org.kde.mdnote` 这个 D-Bus 服务名。
+
+### 多语言
+
+界面的源语言是英文，简体中文和繁体中文翻译内置在程序里，根据系统语言自动选择（`zh_Hans`/`zh_CN`/`zh_SG` 一类走简体，`zh_Hant`/`zh_TW`/`zh_HK` 一类走繁体），其他语言一律回落到英文。想在不改系统语言的情况下强制指定语言：
+
+```bash
+LANGUAGE=en_US LC_ALL=C mdnote             # 强制英文
+LANGUAGE=zh_CN LC_ALL=zh_CN.UTF-8 mdnote   # 强制简体中文
+LANGUAGE=zh_TW LC_ALL=zh_TW.UTF-8 mdnote   # 强制繁体中文
+```
+
+翻译源文件在 `translations/*.ts`（Qt Linguist 格式），改动或新增界面文字后跑一下 `update_translations` 这个 CMake target 重新同步：
+
+```bash
+cmake --build build --target update_translations
+```
+
+### 正常模式的富文本命令
+
+工具栏的"段落""格式"下拉菜单（以及正常模式下的右键菜单）只在正常模式可用，因为它们直接操作富文本格式，源码模式下没有对应操作。
+
+已实现：一~六级标题、段落、提升/降低标题级别、引用、有序/无序列表、水平分割线、代码块、表格、加粗/斜体/下划线/删除线/行内代码、超链接、清除样式。
+
+菜单里显示的快捷键中，目前只有加粗/斜体/下划线是真的能按键触发的（`QTextEdit` 自带行为），其余的暂时只能点菜单触发。
+
+没做的（Qt 原生富文本框架不支持，或者需要额外渲染引擎）：任务列表勾选框交互、LaTeX 公式块、警告框、脚注、自动生成目录、YAML Front Matter、注释语法。
+
+### 图片与链接（正常模式）
+
+- 网络图片（`![](http://...)`）异步加载，加载完成前是个占位框；本地文件路径的图片走 Qt 自带的资源解析，立即显示。
+- 单击链接是把光标移进去，方便编辑链接文字；**按住 Ctrl 点击**才会用默认浏览器打开。鼠标悬停时按住 Ctrl 会看到指针变成手型并显示链接地址。
+
+### 已知限制
+
+- **Wayland 下没有滑动动画** — KWin/mutter 不允许客户端自由移动自己的顶层窗口，所以用 `LayerShellQt` 把窗口锚定在屏幕边缘，呼出/收起是直接显示/隐藏，没有过渡动画。X11 会话下是真正的位移滑动动画。
+- 打开文件用的是 Qt 自带的 `QTextDocument::setMarkdown()`，没有 100% 覆盖 GFM 扩展语法，日常笔记场景够用，但不是完整的 CommonMark/GFM 实现。
+- 除了主题选择，暂时没有独立的设置界面 — 窗口宽度比例、默认文件夹等选项目前只能改配置文件（见下）。
+
+### 配置文件
+
+`~/.config/mdnoterc`：
+
+```ini
+[General]
+widthRatio=0.5
+animationDurationMs=220
+hideOnFocusLost=false
+lastMode=normal
+themeKey=
+
+[Folders]
+defaultFolder=/home/you/Documents/Notes
+recentFolders=...
+
+[Sidebar]
+open=false
+sortKey=mtime
+sortAscending=false
+```
+
+### 许可证
+
+GPL-3.0-or-later，见 [LICENSE](LICENSE)。GNOME Shell 扩展部分（`gnome-extension/quake-mode.js`）改写自 [Quake Terminal](https://github.com/diegodario88/quake-terminal)，沿用同一许可证。

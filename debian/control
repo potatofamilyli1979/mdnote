@@ -5,6 +5,7 @@ Maintainer: David <potatofamily.li@gmail.com>
 Build-Depends: debhelper-compat (= 14),
                cmake,
                qt6-base-dev,
+               qt6-tools-dev,
                libkf6config-dev,
                libkf6windowsystem-dev,
                libkf6globalaccel-dev,
@@ -13,7 +14,7 @@ Build-Depends: debhelper-compat (= 14),
                liblayershellqtinterface-dev,
                libglib2.0-bin
 Standards-Version: 4.6.2
-Homepage: https://invalid.example/mdnote
+Homepage: https://github.com/potatofamilyli1979/mdnote
 Rules-Requires-Root: no
 
 Package: mdnote
