@@ -1,0 +1,53 @@
+Source: mdnote
+Section: utils
+Priority: optional
+Maintainer: David <potatofamily.li@gmail.com>
+Build-Depends: debhelper-compat (= 14),
+               cmake,
+               qt6-base-dev,
+               libkf6config-dev,
+               libkf6windowsystem-dev,
+               libkf6globalaccel-dev,
+               libkf6coreaddons-dev,
+               libkf6dbusaddons-dev,
+               liblayershellqtinterface-dev,
+               libglib2.0-bin
+Standards-Version: 4.6.2
+Homepage: https://invalid.example/mdnote
+Rules-Requires-Root: no
+
+Package: mdnote
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: qt6-wayland
+Description: Yakuake-style sliding Markdown notebook
+ mdnote is a quick-access, slide-down Markdown note-taking application
+ with a WYSIWYG rich-text editor, live theme switching, an in-editor
+ search bar, and a directory-based note sidebar. Notes are stored as
+ plain .md files and exported directly to GFM Markdown with no
+ external converter required.
+ .
+ Toggled via a global F10 shortcut: KGlobalAccel handles this natively
+ on Plasma. Under GNOME/Wayland, install the gnome-shell-extension-
+ mdnote-quake package for the same F10 toggle -- without it (or on any
+ other desktop) the window can still be opened via its .desktop entry,
+ just not slid in/out on a hotkey.
+
+Package: gnome-shell-extension-mdnote-quake
+Architecture: all
+Depends: ${misc:Depends}, gnome-shell (>= 45)
+Recommends: mdnote
+Description: GNOME Shell extension for mdnote's Quake-style toggle
+ Pins the mdnote sliding notebook to a screen edge with a Yakuake-style
+ dropdown animation under GNOME/Wayland, and binds F10 to toggle it --
+ working around two things GNOME/mutter doesn't give ordinary Wayland
+ clients: forcing window position/size, and true always-on-top.
+ .
+ Installed system-wide (into /usr/share/gnome-shell/extensions/); each
+ user who wants it still needs to enable it once:
+ .
+   gnome-extensions enable mdnote-quake@localhost
+ .
+ GNOME Shell only picks up newly installed/enabled extensions after a
+ full session restart (log out and back in under Wayland; Alt+F2, r,
+ Enter under X11).

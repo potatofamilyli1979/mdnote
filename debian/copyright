@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: mdnote
+Source: local, unreleased
+
+Files: *
+Copyright: 2026 David <potatofamily.li@gmail.com>
+License: proprietary
+ Not distributed publicly; packaged for personal use only.

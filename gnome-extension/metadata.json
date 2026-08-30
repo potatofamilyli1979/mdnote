@@ -1,0 +1,8 @@
+{
+  "uuid": "mdnote-quake@localhost",
+  "name": "mdnote Quake Mode",
+  "description": "Pins the mdnote sliding notebook to a screen edge with a Yakuake-style dropdown animation, and binds a key (F10 by default) to toggle it. Works around two things GNOME/mutter doesn't give ordinary Wayland clients: forcing window position/size, and true always-on-top.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "settings-schema": "org.gnome.shell.extensions.mdnote-quake",
+  "url": "https://github.com/diegodario88/quake-terminal"
+}

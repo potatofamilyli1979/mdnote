@@ -1,0 +1,30 @@
+# Chinese translations for mdnote-quake package
+# mdnote-quake 套件的正體中文翻譯.
+# Copyright (C) 2026 THE mdnote-quake'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the mdnote-quake package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: mdnote-quake 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-30 23:11+0800\n"
+"PO-Revision-Date: 2026-08-30 23:11+0800\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:63
+msgid "Error:"
+msgstr "錯誤："
+
+#: extension.js:97
+msgid "No app-id configured for mdnote Quake Mode."
+msgstr "mdnote 快捷模式尚未設定 app-id。"
+
+#: extension.js:105
+msgid "mdnote Quake Mode: no application found with id:"
+msgstr "mdnote 快捷模式：找不到 id 為以下值的應用程式："

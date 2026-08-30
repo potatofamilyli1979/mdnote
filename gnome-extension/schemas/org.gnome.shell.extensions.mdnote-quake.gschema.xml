@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.mdnote-quake" path="/org/gnome/shell/extensions/mdnote-quake/">
+    <key name="app-id" type="s">
+      <default>"org.kde.mdnote.desktop"</default>
+      <summary>mdnote app ID</summary>
+      <description>The .desktop file ID used to launch and track the mdnote window</description>
+    </key>
+    <key name="toggle-shortcut" type="as">
+      <default><![CDATA[['F10']]]></default>
+      <summary>Toggle mdnote</summary>
+      <description>Shortcut to show/hide the mdnote window</description>
+    </key>
+    <key name="vertical-margin-px" type="i">
+      <default>100</default>
+      <summary>Vertical margin (px)</summary>
+      <description>Empty space left above and below the mdnote window (which is vertically centered), in pixels</description>
+    </key>
+    <key name="horizontal-size" type="i">
+      <default>50</default>
+      <summary>Horizontal size</summary>
+      <description>Width of the mdnote window as a percentage of the monitor's work area</description>
+    </key>
+    <key name="horizontal-alignment" type="i">
+      <range min="0" max="2" />
+      <default>1</default>
+      <summary>Horizontal alignment</summary>
+      <description>0 = left edge, 1 = right edge, 2 = centered</description>
+    </key>
+    <key name="monitor-screen" type="i">
+      <default>-1</default>
+      <summary>Monitor</summary>
+      <description>Index of the monitor to show mdnote on, or -1 to stay on whichever monitor the window is already on / the mouse is on (recommended for multi-monitor setups)</description>
+    </key>
+    <key name="render-on-primary-monitor" type="b">
+      <default>false</default>
+      <summary>Show on primary monitor</summary>
+      <description>When enabled, mdnote always shows on the monitor set as Primary in Displays settings, even if that's not where you're currently working</description>
+    </key>
+    <key name="auto-hide-window" type="b">
+      <default>false</default>
+      <summary>Auto-hide on focus loss</summary>
+      <description>When enabled, hides mdnote as soon as another window is focused</description>
+    </key>
+    <key name="always-on-top" type="b">
+      <default>true</default>
+      <summary>Always on top</summary>
+      <description>When enabled, mdnote stays above other windows while shown</description>
+    </key>
+    <key name="skip-taskbar" type="b">
+      <default>true</default>
+      <summary>Hide from overview / Alt-Tab</summary>
+      <description>When enabled, mdnote's window is omitted from the Activities overview and window switcher</description>
+    </key>
+    <key name="animation-time" type="i">
+      <default>220</default>
+      <summary>Animation time (ms)</summary>
+      <description>Duration of the slide-in/slide-out animation in milliseconds</description>
+    </key>
+  </schema>
+</schemalist>

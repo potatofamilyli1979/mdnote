@@ -1,0 +1,24 @@
+# Out-of-tree build directories
+/build/
+/obj-x86_64-linux-gnu/
+
+# Debian packaging build artifacts (left in debian/ by dpkg-buildpackage)
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/tmp/
+/debian/mdnote/
+/debian/gnome-shell-extension-mdnote-quake/
+/debian/*.substvars
+/debian/*.debhelper.log
+/debian/*.log
+
+# GNOME extension gschema compile cache (regenerated at package-build time)
+/gnome-extension/schemas/gschemas.compiled
+
+# Design handoff material -- internal reference, not part of the repo
+/design_handoff_theme_picker/
+
+# Editor/IDE cruft
+.vscode/
+*.swp

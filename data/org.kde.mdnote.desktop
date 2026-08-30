@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=mdnote
+Comment=Yakuake-style sliding Markdown notebook
+Exec=mdnote
+Icon=text-markdown
+Terminal=false
+Categories=Utility;TextEditor;
+X-KDE-StartupNotify=false
+NoDisplay=false

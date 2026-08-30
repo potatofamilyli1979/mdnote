@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+# gschemas.compiled is a checked-in binary artifact, and a real bug
+# already reached a packaged .deb because of it once: the XML source
+# got a key renamed (vertical-size -> vertical-margin-px) but nobody
+# re-ran glib-compile-schemas afterward, so the stale .compiled file
+# (still carrying the old key) got copied into the package as-is,
+# GSettings key not found in schema" for anyone who installed it fresh.
+# Regenerating it here on every build, right before dh_install copies
+# the schemas/ directory into the package, makes it impossible for the
+# packaged copy to drift out of sync with the XML again.
+override_dh_install:
+	glib-compile-schemas gnome-extension/schemas/
+	dh_install

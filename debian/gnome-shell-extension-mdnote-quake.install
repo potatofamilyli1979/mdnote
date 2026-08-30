@@ -1,0 +1,7 @@
+gnome-extension/extension.js usr/share/gnome-shell/extensions/mdnote-quake@localhost/
+gnome-extension/quake-mode.js usr/share/gnome-shell/extensions/mdnote-quake@localhost/
+gnome-extension/metadata.json usr/share/gnome-shell/extensions/mdnote-quake@localhost/
+gnome-extension/schemas/org.gnome.shell.extensions.mdnote-quake.gschema.xml usr/share/gnome-shell/extensions/mdnote-quake@localhost/schemas/
+gnome-extension/schemas/gschemas.compiled usr/share/gnome-shell/extensions/mdnote-quake@localhost/schemas/
+gnome-extension/locale/zh_CN/LC_MESSAGES/mdnote-quake.mo usr/share/gnome-shell/extensions/mdnote-quake@localhost/locale/zh_CN/LC_MESSAGES/
+gnome-extension/locale/zh_TW/LC_MESSAGES/mdnote-quake.mo usr/share/gnome-shell/extensions/mdnote-quake@localhost/locale/zh_TW/LC_MESSAGES/
