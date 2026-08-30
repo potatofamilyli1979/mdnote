@@ -5,9 +5,15 @@
 #include <QGuiApplication>
 #include <QByteArray>
 
-// See SlideWindow.cpp's windows.h include for why both of these matter.
+// See SlideWindow.cpp's windows.h include for why both of these matter
+// -- guarded with #ifndef since Qt6's own CMake integration already
+// defines both globally for anything linking Qt6::Core on Windows.
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 
 namespace

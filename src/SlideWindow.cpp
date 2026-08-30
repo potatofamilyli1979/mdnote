@@ -26,9 +26,15 @@
 // this translation unit (targetGeometry()'s qMax() included).
 // WIN32_LEAN_AND_MEAN: excludes rarely-needed API surface (winsock1,
 // COM, GDI extras, ...) that both bloats build time and risks its own
-// macro/typedef clashes with Qt headers.
+// macro/typedef clashes with Qt headers. Both guarded with #ifndef --
+// Qt6's own CMake integration already defines them globally for
+// anything linking Qt6::Core on Windows.
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #else
 #include <KX11Extras>
