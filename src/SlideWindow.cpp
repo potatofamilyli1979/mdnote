@@ -36,7 +36,6 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#include <dwmapi.h>
 #else
 #include <KX11Extras>
 
@@ -74,13 +73,6 @@ public:
     // QEvent::WindowActivate so it self-heals after any dialog closes.
     void applyMask()
     {
-#ifdef Q_OS_WIN
-        // Windows gets real, compositor-antialiased rounded corners from
-        // DWM instead (see configureWindows()) -- a pixel-mask on top of
-        // that would double up with (and look worse than) what DWM
-        // already draws on the actual top-level frame.
-        return;
-#endif
         if (width() <= 0 || height() <= 0) {
             return;
         }
@@ -305,26 +297,15 @@ void SlideWindow::configureWindows()
     // since it's a z-order request rather than a persistent window
     // style) is the Win32 equivalent of X11's NET::KeepAbove.
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | windowFlags());
-
-    // setWindowFlags() above can recreate the native window, so winId()
-    // is called fresh afterward to make sure this targets the actual
-    // final HWND, not one about to be torn down.
-    const HWND hwnd = reinterpret_cast<HWND>(winId());
-
-    // DWMWA_WINDOW_CORNER_PREFERENCE/DWM_WINDOW_CORNER_PREFERENCE were
-    // only added to the Windows 11 SDK -- defined manually (matching
-    // Microsoft's own published values) rather than depending on
-    // <dwmapi.h> being new enough, since MinGW distributions commonly
-    // bundle an older one. DwmSetWindowAttribute() simply returns an
-    // error (silently ignored here) on Windows 10, where there's no
-    // compositor-level rounding to opt into -- the window just stays
-    // square there, same as it always has.
-#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
-    constexpr DWORD DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-#endif
-    constexpr DWORD DWMWCP_ROUND = 2;
-    const DWORD preference = DWMWCP_ROUND;
-    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &preference, sizeof(preference));
+    // Rounded corners come from the same pixel-mask RoundedCard uses on
+    // every platform (see applyMask()) -- an earlier attempt at using
+    // DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE) here rounded
+    // the wrong rectangle: this top-level window is deliberately larger
+    // than the visible card (kShadowMargin's padding, reserved for the
+    // drop shadow to render into), so DWM ended up rounding that
+    // oversized, mostly-transparent outer boundary instead of the
+    // actual content area, leaving a visible square-cornered card
+    // floating inside a faintly-visible rounded, mostly-empty frame.
 }
 #else
 void SlideWindow::configureX11()

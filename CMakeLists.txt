@@ -100,11 +100,9 @@ target_link_libraries(mdnote PRIVATE
 if(WIN32)
   # RegisterHotKey/UnregisterHotKey (HotkeyManager_win.cpp) and
   # SetWindowPos/SetForegroundWindow (SlideWindow.cpp's Q_OS_WIN branch)
-  # live in user32; DwmSetWindowAttribute() (native rounded corners,
-  # also in SlideWindow.cpp) lives in dwmapi. Both are standard system
-  # libraries present with any Windows toolchain -- nothing extra to
-  # install for either.
-  target_link_libraries(mdnote PRIVATE user32 dwmapi)
+  # live in user32, a standard system library present with any Windows
+  # toolchain -- nothing extra to install for it.
+  target_link_libraries(mdnote PRIVATE user32)
 else()
   target_link_libraries(mdnote PRIVATE
     Qt6::DBus
