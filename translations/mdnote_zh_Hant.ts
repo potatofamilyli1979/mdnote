@@ -15,7 +15,7 @@
     </message>
     <message>
         <location filename="../src/EditorArea.cpp" line="125"/>
-        <location filename="../src/EditorArea.cpp" line="854"/>
+        <location filename="../src/EditorArea.cpp" line="852"/>
         <source>Save</source>
         <translation>儲存</translation>
     </message>
@@ -40,173 +40,173 @@
         <translation>搜尋</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="802"/>
-        <location filename="../src/EditorArea.cpp" line="960"/>
+        <location filename="../src/EditorArea.cpp" line="800"/>
+        <location filename="../src/EditorArea.cpp" line="958"/>
         <source>Paragraph</source>
         <translation>段落</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="805"/>
+        <location filename="../src/EditorArea.cpp" line="803"/>
         <source>Insert</source>
         <translation>插入</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="807"/>
+        <location filename="../src/EditorArea.cpp" line="805"/>
         <source>Horizontal Rule</source>
         <translation>水平分隔線</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="811"/>
+        <location filename="../src/EditorArea.cpp" line="809"/>
         <source>Paragraph Above</source>
         <translation>段落（上方）</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="812"/>
+        <location filename="../src/EditorArea.cpp" line="810"/>
         <source>Paragraph Below</source>
         <translation>段落（下方）</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="870"/>
+        <location filename="../src/EditorArea.cpp" line="868"/>
         <source>Bold</source>
         <translation>粗體</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="880"/>
+        <location filename="../src/EditorArea.cpp" line="878"/>
         <source>Italic</source>
         <translation>斜體</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="890"/>
+        <location filename="../src/EditorArea.cpp" line="888"/>
         <source>Underline</source>
         <translation>底線</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="900"/>
+        <location filename="../src/EditorArea.cpp" line="898"/>
         <source>Strikethrough</source>
         <translation>刪除線</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="910"/>
+        <location filename="../src/EditorArea.cpp" line="908"/>
         <source>Code</source>
         <translation>程式碼</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="923"/>
+        <location filename="../src/EditorArea.cpp" line="921"/>
         <source>Link</source>
         <translation>超連結</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="928"/>
+        <location filename="../src/EditorArea.cpp" line="926"/>
         <source>Clear Formatting</source>
         <translation>清除樣式</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="933"/>
+        <location filename="../src/EditorArea.cpp" line="931"/>
         <source>Quote</source>
         <translation>引用</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="938"/>
+        <location filename="../src/EditorArea.cpp" line="936"/>
         <source>Numbered List</source>
         <translation>編號清單</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="943"/>
+        <location filename="../src/EditorArea.cpp" line="941"/>
         <source>Bullet List</source>
         <translation>項目符號清單</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="948"/>
+        <location filename="../src/EditorArea.cpp" line="946"/>
         <source>Heading 1</source>
         <translation>一級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="948"/>
+        <location filename="../src/EditorArea.cpp" line="946"/>
         <source>Heading 2</source>
         <translation>二級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="948"/>
+        <location filename="../src/EditorArea.cpp" line="946"/>
         <source>Heading 3</source>
         <translation>三級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="949"/>
+        <location filename="../src/EditorArea.cpp" line="947"/>
         <source>Heading 4</source>
         <translation>四級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="949"/>
+        <location filename="../src/EditorArea.cpp" line="947"/>
         <source>Heading 5</source>
         <translation>五級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="949"/>
+        <location filename="../src/EditorArea.cpp" line="947"/>
         <source>Heading 6</source>
         <translation>六級標題</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="966"/>
+        <location filename="../src/EditorArea.cpp" line="964"/>
         <source>Promote Heading</source>
         <translation>提升標題層級</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="976"/>
+        <location filename="../src/EditorArea.cpp" line="974"/>
         <source>Demote Heading</source>
         <translation>降低標題層級</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="984"/>
+        <location filename="../src/EditorArea.cpp" line="982"/>
         <source>Image</source>
         <translation>圖像</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="989"/>
+        <location filename="../src/EditorArea.cpp" line="987"/>
         <source>Table</source>
         <translation>表格</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="994"/>
+        <location filename="../src/EditorArea.cpp" line="992"/>
         <source>Code Block</source>
         <translation>程式碼區塊</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1078"/>
+        <location filename="../src/EditorArea.cpp" line="1076"/>
         <source>Insert Table</source>
         <translation>插入表格</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1086"/>
+        <location filename="../src/EditorArea.cpp" line="1084"/>
         <source>Columns:</source>
         <translation>欄：</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1087"/>
+        <location filename="../src/EditorArea.cpp" line="1085"/>
         <source>Rows:</source>
         <translation>列：</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1125"/>
+        <location filename="../src/EditorArea.cpp" line="1123"/>
         <source>Insert Link</source>
         <translation>插入超連結</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1126"/>
+        <location filename="../src/EditorArea.cpp" line="1124"/>
         <source>Link URL:</source>
         <translation>連結網址（URL）：</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1152"/>
+        <location filename="../src/EditorArea.cpp" line="1150"/>
         <source>Insert Image</source>
         <translation>插入圖像</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1152"/>
+        <location filename="../src/EditorArea.cpp" line="1150"/>
         <source>Image Files (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp)</source>
         <translation>圖像檔案 (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp)</translation>
     </message>
     <message>
-        <location filename="../src/EditorArea.cpp" line="1228"/>
+        <location filename="../src/EditorArea.cpp" line="1226"/>
         <source>Untitled</source>
         <translation>未命名</translation>
     </message>
@@ -222,55 +222,54 @@
 <context>
     <name>HotkeyManager</name>
     <message>
-        <location filename="../src/HotkeyManager.cpp" line="26"/>
         <source>Toggle mdnote</source>
-        <translation>切換 mdnote</translation>
+        <translation type="vanished">切換 mdnote</translation>
     </message>
 </context>
 <context>
     <name>NormalTextEdit</name>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="137"/>
+        <location filename="../src/NormalTextEdit.cpp" line="135"/>
         <source>This content format isn&apos;t supported for pasting</source>
         <translation>不支援貼上該格式的內容</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="428"/>
+        <location filename="../src/NormalTextEdit.cpp" line="426"/>
         <source>Table</source>
         <translation>表格</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="441"/>
+        <location filename="../src/NormalTextEdit.cpp" line="439"/>
         <source>Insert Row Above</source>
         <translation>上方插入列</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="442"/>
+        <location filename="../src/NormalTextEdit.cpp" line="440"/>
         <source>Insert Row Below</source>
         <translation>下方插入列</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="443"/>
+        <location filename="../src/NormalTextEdit.cpp" line="441"/>
         <source>Insert Column Left</source>
         <translation>左側插入欄</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="444"/>
+        <location filename="../src/NormalTextEdit.cpp" line="442"/>
         <source>Insert Column Right</source>
         <translation>右側插入欄</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="446"/>
+        <location filename="../src/NormalTextEdit.cpp" line="444"/>
         <source>Delete Row</source>
         <translation>刪除列</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="448"/>
+        <location filename="../src/NormalTextEdit.cpp" line="446"/>
         <source>Delete Column</source>
         <translation>刪除欄</translation>
     </message>
     <message>
-        <location filename="../src/NormalTextEdit.cpp" line="451"/>
+        <location filename="../src/NormalTextEdit.cpp" line="449"/>
         <source>Delete Table</source>
         <translation>刪除表格</translation>
     </message>
@@ -423,9 +422,19 @@
 <context>
     <name>SlideWindow</name>
     <message>
-        <location filename="../src/SlideWindow.cpp" line="439"/>
+        <location filename="../src/SlideWindow.cpp" line="559"/>
         <source>Choose Notes Folder</source>
         <translation>選擇筆記資料夾</translation>
+    </message>
+    <message>
+        <location filename="../src/SlideWindow.cpp" line="576"/>
+        <source>Look in:</source>
+        <translation>尋找於：</translation>
+    </message>
+    <message>
+        <location filename="../src/SlideWindow.cpp" line="579"/>
+        <source>Files of type:</source>
+        <translation>檔案型態：</translation>
     </message>
 </context>
 <context>
@@ -484,12 +493,12 @@
 <context>
     <name>ThemePickerPopup</name>
     <message>
-        <location filename="../src/ThemePicker.cpp" line="394"/>
+        <location filename="../src/ThemePicker.cpp" line="397"/>
         <source>Preview: %1</source>
         <translation>預覽：%1</translation>
     </message>
     <message>
-        <location filename="../src/ThemePicker.cpp" line="401"/>
+        <location filename="../src/ThemePicker.cpp" line="404"/>
         <source>Current: %1</source>
         <translation>目前：%1</translation>
     </message>

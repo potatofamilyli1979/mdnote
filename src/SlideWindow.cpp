@@ -8,17 +8,18 @@
 
 #include <QGuiApplication>
 #include <QScreen>
+#include <QCursor>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QPropertyAnimation>
+#include <QVariantAnimation>
 #include <QFileDialog>
+#include <QLabel>
 #include <QShowEvent>
 #include <QResizeEvent>
-#include <QPolygon>
-#include <QRegion>
 #include <QGraphicsDropShadowEffect>
-#include <QtMath>
-#include <cmath>
+#include <QGraphicsEffect>
+#include <QPainter>
+#include <QPainterPath>
 
 #ifdef Q_OS_WIN
 // NOMINMAX: windows.h otherwise `#define`s min/max, which silently
@@ -54,68 +55,89 @@ namespace
 // LayerShellQt margin -- see that function's comment for why).
 constexpr int kVerticalScreenMargin = 100;
 
-// The visible "card": rounds its left (open) edge while leaving the
-// right edge -- flush against the screen edge -- square. setMask() only
-// works reliably here because this is a *child* widget: Qt clips a
-// child's own compositing into its parent entirely in software, with no
-// window-system shape protocol involved. Masking the top-level window
-// directly does not work under this externally (GNOME-extension-)
-// managed setup, which has no window-shaping protocol support.
-class RoundedCard : public QWidget
+#ifdef Q_OS_WIN
+// Windows-only: the GNOME extension's 100px figure was tuned to look
+// right against that extension's own "docked card" presentation
+// (see gnome-extension/quake-mode.js), which this platform doesn't
+// share -- 100px top and bottom reads as too much dead space rather
+// than intentional framing here, next to how much taller other normal
+// windows on the same screen sit. Smaller margin, taller card; X11 and
+// Wayland keep kVerticalScreenMargin as-is.
+constexpr int kVerticalScreenMarginWindows = 24;
+#endif
+
+// Which monitor a fresh slide-in should appear on: wherever the pointer
+// currently is, matching the GNOME extension's own
+// monitorDisplayScreenIndex getter (Shell.Global.get().display.
+// get_current_monitor(), quake-mode.js) rather than always the primary
+// display. Only consulted by the platforms that position the window
+// themselves (X11, Windows) -- GNOME's extension and native Wayland's
+// LayerShellQt anchoring make their own monitor choice independently.
+QScreen *screenUnderCursor()
+{
+    if (QScreen *screen = QGuiApplication::screenAt(QCursor::pos())) {
+        return screen;
+    }
+    return QGuiApplication::primaryScreen();
+}
+
+// Clips the card's rendered content (and everything inside it -- editor,
+// sidebar, all of it) to a shape that rounds the left (open) edge while
+// leaving the right edge -- flush against the screen edge -- square.
+//
+// QWidget::setMask() was tried first, but a mask is a QRegion: an
+// inherently binary, non-antialiased pixel boundary. No amount of
+// polygon-arc sampling fixes that -- it only controls how closely the
+// *shape* approximates a circle, not whether its edge is smooth, so the
+// curve always looked staircased, worst of all at fractional DPI scale
+// factors (Windows' common 125%/150%) where the physical-pixel grid
+// doesn't line up cleanly with the logical one.
+//
+// A QGraphicsEffect instead intercepts the widget's already-rendered
+// pixmap and recomposites it through a QPainterPath *clip path* (not a
+// region) with antialiasing on -- Qt's raster engine computes real
+// per-pixel coverage for an antialiased clip path, giving a genuinely
+// smooth edge at any scale factor. This runs entirely in Qt's own
+// software compositing, the same as setMask() did for a child widget, so
+// it works identically under the externally-managed GNOME setup that has
+// no window-shaping protocol support.
+class RoundedCornersEffect : public QGraphicsEffect
 {
 public:
-    using QWidget::QWidget;
-
-    // Split out of resizeEvent() so it can also be re-run when
-    // something *other* than a resize clears the mask -- a native
-    // QStyle's dialog-teardown style-polishing path can clear a child
-    // widget's mask as a side effect. SlideWindow re-invokes this on
-    // QEvent::WindowActivate so it self-heals after any dialog closes.
-    void applyMask()
+    explicit RoundedCornersEffect(qreal radius, QObject *parent = nullptr)
+        : QGraphicsEffect(parent)
+        , m_radius(radius)
     {
-        if (width() <= 0 || height() <= 0) {
-            return;
-        }
-        constexpr int kRadius = 20;
-        // QRegion (what setMask() ultimately needs) has no anti-aliasing --
-        // every edge is a hard, binary pixel boundary, arc or not. What
-        // *is* controllable is how finely the arc gets approximated by
-        // straight segments before rasterizing: going through
-        // QPainterPath::arcTo() + toFillPolygon() uses Qt's default
-        // Bezier-flattening tolerance, which is too coarse at this 20px
-        // radius to look round. Sampling the actual circle with many
-        // points directly gives much finer control over that tradeoff.
-        // setMask()'s QPolygon is built and rounded in *logical* pixels,
-        // though, so the same point count looks coarser the more each
-        // logical pixel expands into physical ones -- scaling the sample
-        // count by devicePixelRatioF() keeps each step under a physical
-        // pixel on a scaled-up (100% isn't the only common setting on
-        // Windows, where 125%/150% are routine) display, not just at 1:1.
-        const int kArcSteps = qRound(48 * devicePixelRatioF());
-        const QRectF r(rect());
-
-        QPolygon polygon;
-        auto addArc = [&](qreal cx, qreal cy, qreal startDeg, qreal sweepDeg) {
-            for (int i = 0; i <= kArcSteps; ++i) {
-                const qreal deg = startDeg + sweepDeg * (qreal(i) / kArcSteps);
-                const qreal rad = qDegreesToRadians(deg);
-                polygon << QPoint(qRound(cx + kRadius * std::cos(rad)), qRound(cy - kRadius * std::sin(rad)));
-            }
-        };
-        polygon << QPoint(qRound(r.right()), qRound(r.top()));
-        addArc(r.left() + kRadius, r.top() + kRadius, 90, 90);
-        addArc(r.left() + kRadius, r.bottom() - kRadius, 180, 90);
-        polygon << QPoint(qRound(r.right()), qRound(r.bottom()));
-
-        setMask(QRegion(polygon));
     }
 
 protected:
-    void resizeEvent(QResizeEvent *event) override
+    void draw(QPainter *painter) override
     {
-        QWidget::resizeEvent(event);
-        applyMask();
+        QPoint offset;
+        const QPixmap pixmap = sourcePixmap(Qt::LogicalCoordinates, &offset);
+        if (pixmap.isNull()) {
+            return;
+        }
+
+        const QRectF r(0, 0, pixmap.width() / pixmap.devicePixelRatio(), pixmap.height() / pixmap.devicePixelRatio());
+        QPainterPath path;
+        path.moveTo(r.right(), r.top());
+        path.lineTo(r.left() + m_radius, r.top());
+        path.arcTo(QRectF(r.left(), r.top(), 2 * m_radius, 2 * m_radius), 90, 90);
+        path.lineTo(r.left(), r.bottom() - m_radius);
+        path.arcTo(QRectF(r.left(), r.bottom() - 2 * m_radius, 2 * m_radius, 2 * m_radius), 180, 90);
+        path.lineTo(r.right(), r.bottom());
+        path.closeSubpath();
+
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setClipPath(path.translated(offset));
+        painter->drawPixmap(offset, pixmap);
+        painter->restore();
     }
+
+private:
+    qreal m_radius;
 };
 }
 
@@ -147,7 +169,8 @@ SlideWindow::SlideWindow(FileManager *fileManager, ConfigManager *config, QWidge
     shadow->setColor(QColor(0, 0, 0, 140));
     m_shadowWrapper->setGraphicsEffect(shadow);
 
-    m_card = new RoundedCard(m_shadowWrapper);
+    m_card = new QWidget(m_shadowWrapper);
+    m_card->setGraphicsEffect(new RoundedCornersEffect(20, m_card));
     auto *cardLayout = new QVBoxLayout(m_shadowWrapper);
     cardLayout->setContentsMargins(0, 0, 0, 0);
     cardLayout->addWidget(m_card);
@@ -193,7 +216,10 @@ SlideWindow::SlideWindow(FileManager *fileManager, ConfigManager *config, QWidge
     });
     connect(m_config, &ConfigManager::widthRatioChanged, this, [this] {
         if (isVisible()) {
-            setGeometry(targetGeometry());
+            // The screen this window is actually being shown on, not
+            // necessarily the pointer's current one (which may have moved
+            // since this window last opened) or the primary display.
+            setGeometry(targetGeometry(screen()));
         }
     });
     connect(m_editor, &EditorArea::themeSelected, this, [this](const QString &key) {
@@ -229,22 +255,10 @@ SlideWindow::SlideWindow(FileManager *fileManager, ConfigManager *config, QWidge
     m_sidebar->applyTheme(findTheme(savedThemeKey));
     m_editor->setThemeSelection(savedThemeKey);
 
-    m_geometryAnimation = new QPropertyAnimation(this, "geometry", this);
-}
-
-bool SlideWindow::event(QEvent *event)
-{
-    if (event->type() == QEvent::WindowActivate) {
-        // Re-applies m_card's rounded-corner mask -- see RoundedCard::
-        // applyMask()'s doc comment. Regaining activation (which
-        // includes a modal QFileDialog closing) is broad enough to
-        // self-heal after any dialog, not just the specific one this
-        // was first noticed on, and cheap enough (a few dozen QPolygon
-        // points) to not worry about it firing more often than
-        // strictly necessary.
-        static_cast<RoundedCard *>(m_card)->applyMask();
-    }
-    return QWidget::event(event);
+    m_revealAnimation = new QVariantAnimation(this);
+    connect(m_revealAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+        setRevealMask(value.toInt());
+    });
 }
 
 void SlideWindow::showEvent(QShowEvent *event)
@@ -265,6 +279,35 @@ void SlideWindow::updateSidebarGeometry()
 {
     const int top = m_editor->toolbarHeight();
     m_sidebar->setGeometry(0, top, m_sidebar->width(), m_card->height() - top);
+}
+
+// Clips this top-level window to a plain rectangle revealWidth wide,
+// anchored at its own right (docked) edge -- used by slideIn()/slideOut()
+// to "unfurl"/"retract" the window in place instead of translating its
+// position across the screen. See slideIn()'s doc comment for why: a
+// position-based slide used to start from just off the target screen's
+// right edge, but on a multi-monitor setup with a display extending that
+// edge, "just off screen" actually lands ON the neighboring monitor,
+// making the window visibly cross it during the animation. A width-only
+// reveal never leaves the target screen's bounds, since the window's
+// real position/size are already final the moment it's shown -- only how
+// much of it is currently clipped visible changes. Never called with 0:
+// Qt's setMask() special-cases a fully empty QRegion as "clear the mask"
+// (i.e. fully visible) rather than "fully hidden", so revealWidth is
+// clamped to at least 1 physical pixel -- imperceptible, and side-steps
+// that gotcha entirely.
+void SlideWindow::setRevealMask(int revealWidth)
+{
+    const int w = width();
+    m_revealWidth = qBound(1, revealWidth, w);
+    if (m_revealWidth >= w) {
+        // Full reveal is the steady state the window sits in almost all
+        // the time -- clearMask() rather than a mask matching the exact
+        // full rect, so idle repaints don't pay for a no-op clip.
+        clearMask();
+        return;
+    }
+    setMask(QRect(w - m_revealWidth, 0, m_revealWidth, height()));
 }
 
 void SlideWindow::ensurePlatformConfigured()
@@ -297,15 +340,15 @@ void SlideWindow::configureWindows()
     // since it's a z-order request rather than a persistent window
     // style) is the Win32 equivalent of X11's NET::KeepAbove.
     setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | windowFlags());
-    // Rounded corners come from the same pixel-mask RoundedCard uses on
-    // every platform (see applyMask()) -- an earlier attempt at using
-    // DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE) here rounded
-    // the wrong rectangle: this top-level window is deliberately larger
-    // than the visible card (kShadowMargin's padding, reserved for the
-    // drop shadow to render into), so DWM ended up rounding that
-    // oversized, mostly-transparent outer boundary instead of the
-    // actual content area, leaving a visible square-cornered card
-    // floating inside a faintly-visible rounded, mostly-empty frame.
+    // Rounded corners come from the same RoundedCornersEffect every
+    // platform uses (see that class's doc comment) -- an earlier attempt
+    // at using DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE) here
+    // rounded the wrong rectangle: this top-level window is deliberately
+    // larger than the visible card (kShadowMargin's padding, reserved for
+    // the drop shadow to render into), so DWM ended up rounding that
+    // oversized, mostly-transparent outer boundary instead of the actual
+    // content area, leaving a visible square-cornered card floating
+    // inside a faintly-visible rounded, mostly-empty frame.
 }
 #else
 void SlideWindow::configureX11()
@@ -365,14 +408,19 @@ void SlideWindow::configureWayland()
 }
 #endif
 
-QRect SlideWindow::targetGeometry() const
+QRect SlideWindow::targetGeometry(const QScreen *screen) const
 {
-    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
     if (!screen) {
         return QRect(0, 0, 800, 600);
     }
     const QRect avail = screen->availableGeometry();
     const int width = qRound(avail.width() * m_config->widthRatio());
+#ifdef Q_OS_WIN
+    const int verticalMargin = kVerticalScreenMarginWindows;
+#else
     // Under GNOME this value is computed but never actually consulted
     // (that extension owns geometry independently -- see slideIn()'s
     // m_externallyManaged branch); under native Wayland, the real fix is
@@ -380,8 +428,10 @@ QRect SlideWindow::targetGeometry() const
     // height is ignored there once both Top and Bottom are anchored --
     // this return value's height still needs to match it for X11, whose
     // window manager (unlike layer-shell) does respect a plain resize.
-    const int height = qMax(100, avail.height() - 2 * kVerticalScreenMargin);
-    return QRect(avail.right() - width + 1, avail.top() + kVerticalScreenMargin, width, height);
+    const int verticalMargin = kVerticalScreenMargin;
+#endif
+    const int height = qMax(100, avail.height() - 2 * verticalMargin);
+    return QRect(avail.right() - width + 1, avail.top() + verticalMargin, width, height);
 }
 
 void SlideWindow::toggle()
@@ -396,7 +446,6 @@ void SlideWindow::toggle()
 void SlideWindow::slideIn()
 {
     m_isOpen = true;
-    const QRect target = targetGeometry();
 
     if (!isVisible()) {
         ensurePlatformConfigured();
@@ -404,21 +453,26 @@ void SlideWindow::slideIn()
 
 #ifdef Q_OS_WIN
     // Windows places no restriction on a client freely moving its own
-    // top-level window (unlike Wayland), so this is a real geometry
-    // slide-in exactly like the X11 path below.
-    QRect start = target;
-    if (QScreen *screen = QGuiApplication::primaryScreen()) {
-        start.moveLeft(screen->geometry().right() + 1);
-    }
-    setGeometry(start);
+    // top-level window (unlike Wayland), so geometry is settled up front
+    // -- on whichever screen the pointer is currently on, matching the
+    // GNOME extension's own follow-the-pointer monitor choice (see
+    // screenUnderCursor()) -- and only the reveal mask animates, rather
+    // than the window's position. See setRevealMask()'s doc comment for
+    // why: the previous approach set the window's start position just off
+    // the target screen's right edge and animated it sliding in from
+    // there, which visibly crossed any monitor extending past that edge.
+    const QRect target = targetGeometry(screenUnderCursor());
+    setGeometry(target);
+    setRevealMask(1);
     show();
-    disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
-    m_geometryAnimation->stop();
-    m_geometryAnimation->setDuration(m_config->animationDurationMs());
-    m_geometryAnimation->setEasingCurve(QEasingCurve::OutCubic);
-    m_geometryAnimation->setStartValue(start);
-    m_geometryAnimation->setEndValue(target);
-    m_geometryAnimation->start();
+
+    disconnect(m_revealAnimation, &QVariantAnimation::finished, this, nullptr);
+    m_revealAnimation->stop();
+    m_revealAnimation->setDuration(m_config->animationDurationMs());
+    m_revealAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    m_revealAnimation->setStartValue(1);
+    m_revealAnimation->setEndValue(target.width());
+    m_revealAnimation->start();
 
     // SetWindowPos with HWND_TOPMOST is the Win32 always-on-top
     // primitive -- Qt::WindowStaysOnTopHint alone is honored inconsistently
@@ -449,22 +503,27 @@ void SlideWindow::slideIn()
         // to be honored. Harmless when layer-shell is working since
         // LayerShellQt's own anchors/setDesiredSize control the real
         // surface size regardless.
+        const QRect target = targetGeometry();
         setFixedSize(target.size());
         show();
     } else {
-        QRect start = target;
-        if (QScreen *screen = QGuiApplication::primaryScreen()) {
-            start.moveLeft(screen->geometry().right() + 1);
-        }
-        setGeometry(start);
+        // Real X11 slide -- same reveal-mask technique and pointer-
+        // follow monitor choice as the Windows branch above (see its
+        // comment); X11 has the identical multi-monitor bleed potential
+        // a plain position-slide would have, since it's the same
+        // technique either way.
+        const QRect target = targetGeometry(screenUnderCursor());
+        setGeometry(target);
+        setRevealMask(1);
         show();
-        disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
-        m_geometryAnimation->stop();
-        m_geometryAnimation->setDuration(m_config->animationDurationMs());
-        m_geometryAnimation->setEasingCurve(QEasingCurve::OutCubic);
-        m_geometryAnimation->setStartValue(start);
-        m_geometryAnimation->setEndValue(target);
-        m_geometryAnimation->start();
+
+        disconnect(m_revealAnimation, &QVariantAnimation::finished, this, nullptr);
+        m_revealAnimation->stop();
+        m_revealAnimation->setDuration(m_config->animationDurationMs());
+        m_revealAnimation->setEasingCurve(QEasingCurve::OutCubic);
+        m_revealAnimation->setStartValue(1);
+        m_revealAnimation->setEndValue(target.width());
+        m_revealAnimation->start();
     }
 
     if (!m_isWayland) {
@@ -480,34 +539,26 @@ void SlideWindow::slideOut()
     m_isOpen = false;
 
 #ifdef Q_OS_WIN
-    QRect end = geometry();
-    if (QScreen *screen = QGuiApplication::primaryScreen()) {
-        end.moveLeft(screen->geometry().right() + 1);
-    }
-    disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
-    m_geometryAnimation->stop();
-    m_geometryAnimation->setDuration(m_config->animationDurationMs());
-    m_geometryAnimation->setEasingCurve(QEasingCurve::InCubic);
-    m_geometryAnimation->setStartValue(geometry());
-    m_geometryAnimation->setEndValue(end);
-    connect(m_geometryAnimation, &QPropertyAnimation::finished, this, [this] { hide(); });
-    m_geometryAnimation->start();
+    disconnect(m_revealAnimation, &QVariantAnimation::finished, this, nullptr);
+    m_revealAnimation->stop();
+    m_revealAnimation->setDuration(m_config->animationDurationMs());
+    m_revealAnimation->setEasingCurve(QEasingCurve::InCubic);
+    m_revealAnimation->setStartValue(m_revealWidth);
+    m_revealAnimation->setEndValue(1);
+    connect(m_revealAnimation, &QVariantAnimation::finished, this, [this] { hide(); });
+    m_revealAnimation->start();
 #else
     if (m_isWayland) {
         hide();
     } else {
-        QRect end = geometry();
-        if (QScreen *screen = QGuiApplication::primaryScreen()) {
-            end.moveLeft(screen->geometry().right() + 1);
-        }
-        disconnect(m_geometryAnimation, &QPropertyAnimation::finished, this, nullptr);
-        m_geometryAnimation->stop();
-        m_geometryAnimation->setDuration(m_config->animationDurationMs());
-        m_geometryAnimation->setEasingCurve(QEasingCurve::InCubic);
-        m_geometryAnimation->setStartValue(geometry());
-        m_geometryAnimation->setEndValue(end);
-        connect(m_geometryAnimation, &QPropertyAnimation::finished, this, [this] { hide(); });
-        m_geometryAnimation->start();
+        disconnect(m_revealAnimation, &QVariantAnimation::finished, this, nullptr);
+        m_revealAnimation->stop();
+        m_revealAnimation->setDuration(m_config->animationDurationMs());
+        m_revealAnimation->setEasingCurve(QEasingCurve::InCubic);
+        m_revealAnimation->setStartValue(m_revealWidth);
+        m_revealAnimation->setEndValue(1);
+        connect(m_revealAnimation, &QVariantAnimation::finished, this, [this] { hide(); });
+        m_revealAnimation->start();
     }
 #endif
 }
@@ -525,6 +576,24 @@ void SlideWindow::promptChangeFolder()
     dialog.setFileMode(QFileDialog::Directory);
     dialog.setOption(QFileDialog::ShowDirsOnly);
     dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    // Two of this dialog's built-in labels never come out translated:
+    // Qt's own QFileDialog source strings are "&Look in:" and "Files of
+    // &type:" (with mnemonic ampersands), but this Qt build's bundled
+    // qtbase_zh_CN.qm only has entries for the ampersand-less "Look in:"
+    // and "Files of type:" -- an upstream mismatch between the shipped
+    // translation catalog and the actual compiled dialog strings in this
+    // Qt version, nothing mdnote's own translation setup can reach.
+    // Overriding the two labels directly with mdnote's own tr() strings
+    // (translated via mdnote's own .ts files, which don't have this
+    // mismatch) works around it. Relies on QFileDialog's internal object
+    // names (lookInLabel/fileTypeLabel), which aren't official API but
+    // have been stable across Qt versions for a long time.
+    if (auto *label = dialog.findChild<QLabel *>(QStringLiteral("lookInLabel"))) {
+        label->setText(tr("Look in:"));
+    }
+    if (auto *label = dialog.findChild<QLabel *>(QStringLiteral("fileTypeLabel"))) {
+        label->setText(tr("Files of type:"));
+    }
     pinDialogAboveSlideWindow(&dialog);
     const int result = dialog.exec();
     if (result != QDialog::Accepted || dialog.selectedFiles().isEmpty()) {

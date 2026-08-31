@@ -9,14 +9,10 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QGraphicsDropShadowEffect>
+#include <QGraphicsEffect>
 #include <QApplication>
 #include <QScreen>
 #include <QTimer>
-#include <QPolygon>
-#include <QRegion>
-#include <QResizeEvent>
-#include <QtMath>
-#include <cmath>
 
 namespace
 {
@@ -63,75 +59,65 @@ void paintBicolorCircle(QPainter &painter, const QRectF &r, const QColor &accent
 }
 
 constexpr int kPopupRadius = 12;
-constexpr int kPopupArcSteps = 32;
 // Room around the visible card for QGraphicsDropShadowEffect to render
-// into -- see RoundedPopupCard's doc comment for why the effect and the
-// rounded shape live on two different widgets.
+// into -- see RoundedCornersEffect's doc comment for why the shadow
+// effect and the corner-rounding effect live on two different widgets.
 constexpr int kPopupShadowMargin = 20;
 
-QPolygon roundedRectPolygon(const QRect &r, int radius, int arcSteps)
-{
-    QPolygon polygon;
-    auto addArc = [&](qreal cx, qreal cy, qreal startDeg, qreal sweepDeg) {
-        for (int i = 0; i <= arcSteps; ++i) {
-            const qreal deg = startDeg + sweepDeg * (qreal(i) / arcSteps);
-            const qreal rad = qDegreesToRadians(deg);
-            polygon << QPoint(qRound(cx + radius * std::cos(rad)), qRound(cy - radius * std::sin(rad)));
-        }
-    };
-    // Each arc has to start exactly where the previous one ended (its
-    // "edge junction" point) or the mask polygon self-intersects instead
-    // of tracing a single closed loop.
-    addArc(r.left() + radius, r.top() + radius, 90, 90);      // top junction -> left junction
-    addArc(r.left() + radius, r.bottom() - radius, 180, 90);  // left junction -> bottom junction
-    addArc(r.right() - radius, r.bottom() - radius, 270, 90); // bottom junction -> right junction
-    addArc(r.right() - radius, r.top() + radius, 0, 90);      // right junction -> top junction
-    return polygon;
-}
-
-// Same technique as SlideWindow.cpp's RoundedCard: setMask() clips
-// reliably as a *child* widget (pure software compositing) but is a
-// no-op on this app's externally (GNOME-extension-)managed top-level
-// surfaces, so the rounded shape has to live on a child of the actual
-// Qt::Popup window, not the popup itself. Splitting the
-// QGraphicsDropShadowEffect off onto a separate, plain (non-masked,
-// non-custom-painted) wrapper widget is also deliberate: a graphics
-// effect applied to the SAME widget that both sets a hard-edged mask
-// and does its own translucent custom paint only composites correctly
-// on some edges.
-class RoundedPopupCard : public QWidget
+// Clips the card's rendered content (all four corners, unlike
+// SlideWindow.cpp's left-only-rounded card) through an antialiased
+// QPainterPath clip instead of QWidget::setMask()'s binary QRegion --
+// see SlideWindow.cpp's own RoundedCornersEffect doc comment for why a
+// mask can never look smooth regardless of how finely its polygon
+// approximates a circle. This card used to paint its own white
+// rounded-rect background *and* set a mask shaped by a second,
+// independently-computed rounded-rect polygon -- the two used slightly
+// different rectangles (the paint path was inset by 1px, the mask
+// wasn't), so the mask edge sat a hair outside the painted edge and
+// exposed a sliver of fully transparent gap all along the right and
+// bottom edges. Clipping and drawing from the exact same QPainterPath
+// here removes the two-different-shapes mismatch entirely, not just the
+// aliasing.
+class RoundedCornersEffect : public QGraphicsEffect
 {
 public:
-    using QWidget::QWidget;
-
-    void setCornerRadius(int radius) { m_radius = radius; }
+    explicit RoundedCornersEffect(qreal radius, QObject *parent = nullptr)
+        : QGraphicsEffect(parent)
+        , m_radius(radius)
+    {
+    }
 
 protected:
-    void resizeEvent(QResizeEvent *event) override
+    void draw(QPainter *painter) override
     {
-        QWidget::resizeEvent(event);
-        if (width() > 0 && height() > 0) {
-            // See RoundedCard::applyMask() in SlideWindow.cpp for why
-            // this is scaled by devicePixelRatioF() -- the mask polygon
-            // is built and rounded in logical pixels, so a fixed step
-            // count looks coarser the more each logical pixel expands
-            // into physical ones on a scaled-up display.
-            setMask(QRegion(roundedRectPolygon(rect(), m_radius, qRound(kPopupArcSteps * devicePixelRatioF()))));
+        QPoint offset;
+        const QPixmap pixmap = sourcePixmap(Qt::LogicalCoordinates, &offset);
+        if (pixmap.isNull()) {
+            return;
         }
-    }
-    void paintEvent(QPaintEvent *) override
-    {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
+
+        const QRectF r(0, 0, pixmap.width() / pixmap.devicePixelRatio(), pixmap.height() / pixmap.devicePixelRatio());
         QPainterPath path;
-        path.addPolygon(roundedRectPolygon(rect().adjusted(0, 0, -1, -1), m_radius, qRound(kPopupArcSteps * devicePixelRatioF())));
-        painter.fillPath(path, QColor(255, 255, 255));
-        painter.setPen(QPen(QColor(0, 0, 0, 31), 1));
-        painter.drawPath(path);
+        path.addRoundedRect(r, m_radius, m_radius);
+        const QPainterPath translatedPath = path.translated(offset);
+
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setClipPath(translatedPath);
+        painter->drawPixmap(offset, pixmap);
+        painter->setClipping(false);
+        // Same path used for the clip and the border, so the border
+        // traces exactly where the clip actually cut -- the previous
+        // two-different-rectangles mismatch above is what made a
+        // visible gap possible in the first place.
+        painter->setPen(QPen(QColor(0, 0, 0, 31), 1));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawPath(translatedPath);
+        painter->restore();
     }
 
 private:
-    int m_radius = kPopupRadius;
+    qreal m_radius;
 };
 
 // QLabel's usual palette-based text color is unreliable for this one
@@ -289,12 +275,22 @@ void ThemeSwatch::setKeyboardHighlighted(bool highlighted)
 // ------------------------------------------------------------ ThemePickerPopup
 
 ThemePickerPopup::ThemePickerPopup(QWidget *parent)
-    : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint)
+    // Qt::NoDropShadowWindowHint: Windows normally gives Qt::Popup
+    // windows a native CS_DROPSHADOW edge -- a plain rectangular shadow
+    // drawn by DWM directly against the raw HWND bounds, with no
+    // awareness of this popup's own rounded/translucent content. Left
+    // enabled, it showed as a crisp (unblurred, so clearly distinct from
+    // this popup's own soft QGraphicsDropShadowEffect below) rectangular
+    // line right at kPopupShadowMargin's edge, well outside the actual
+    // rounded card.
+    : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
 {
     setAttribute(Qt::WA_TranslucentBackground, true);
 
-    // Shadow lives on a plain wrapper, not on the card that draws/masks
-    // itself -- see RoundedPopupCard's doc comment.
+    // Shadow lives on a plain wrapper, not on the card that paints/clips
+    // itself -- see RoundedCornersEffect's doc comment: a graphics effect
+    // applied to the same widget that also does its own custom paint
+    // only composites correctly on some edges.
     auto *shadowWrapper = new QWidget(this);
     auto *shadow = new QGraphicsDropShadowEffect(shadowWrapper);
     shadow->setBlurRadius(28);
@@ -308,8 +304,16 @@ ThemePickerPopup::ThemePickerPopup(QWidget *parent)
     // content elsewhere already does.
     const qreal scale = uiChromeScale(this);
 
-    auto *card = new RoundedPopupCard(shadowWrapper);
-    card->setCornerRadius(qRound(kPopupRadius * scale));
+    auto *card = new QWidget(shadowWrapper);
+    // autoFillBackground()+palette rather than a stylesheet -- see the
+    // divider widget further down for why (Fusion's WA_StyledBackground
+    // side effect from any stylesheet at all, even a scoped/transparent
+    // one).
+    card->setAutoFillBackground(true);
+    QPalette cardPalette = card->palette();
+    cardPalette.setColor(QPalette::Window, Qt::white);
+    card->setPalette(cardPalette);
+    card->setGraphicsEffect(new RoundedCornersEffect(kPopupRadius * scale, card));
     auto *shadowLayout = new QVBoxLayout(shadowWrapper);
     shadowLayout->setContentsMargins(0, 0, 0, 0);
     shadowLayout->addWidget(card);
