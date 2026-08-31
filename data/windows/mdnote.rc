@@ -1,0 +1,7 @@
+// Embeds mdnote.ico as the .exe's own icon (Explorer, taskbar, Alt-Tab,
+// and what the installer script picks up for shortcuts) -- without a
+// resource like this, a Windows executable has no icon of its own at
+// all. IDI_APPICON is just a resource name; being the first (only) ICON
+// resource in the file is what makes Windows treat it as the exe's
+// default icon.
+IDI_APPICON ICON "mdnote.ico"

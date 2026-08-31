@@ -47,6 +47,10 @@ if(WIN32)
     src/main_win.cpp
     src/ConfigManager_win.cpp
     src/HotkeyManager_win.cpp
+    # CMake compiles a .rc file listed as a target source like any other
+    # -- this is what gives the built .exe its own icon (Explorer,
+    # taskbar, Alt-Tab); without it a Windows binary has no icon at all.
+    data/windows/mdnote.rc
   )
 else()
   set(MDNOTE_PLATFORM_SOURCES
@@ -140,4 +144,6 @@ endif()
 install(TARGETS mdnote DESTINATION bin)
 if(NOT WIN32)
   install(FILES data/org.kde.mdnote.desktop DESTINATION share/applications)
+  install(FILES data/icons/hicolor/scalable/apps/org.kde.mdnote.svg
+    DESTINATION share/icons/hicolor/scalable/apps)
 endif()

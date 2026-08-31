@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!--
+    mdnote app icon. Design: a rounded-square tile in the app's own
+    "Pine Wind" preset theme colors (src/Theme.cpp's "songfeng" entry,
+    accent #2f4f4f, content #f0f8ff), holding a card shape rounded on
+    its left edge and square on its right, matching the real sliding
+    card's own shape (SlideWindow.cpp's RoundedCornersEffect). A bold
+    "M" on the card stands for Markdown.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f4f4f"/>
+      <stop offset="1" stop-color="#223a3a"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#bg)"/>
+  <path d="M 250,49 L 250,207 L 122,207 A 44,44 0 0 1 78,163 L 78,93 A 44,44 0 0 1 122,49 Z" fill="#f0f8ff"/>
+  <text x="164" y="129" text-anchor="middle" dominant-baseline="central"
+        font-family="Segoe UI, Arial, sans-serif" font-weight="700"
+        font-size="100" fill="#2f4f4f">M</text>
+</svg>
