@@ -82,9 +82,10 @@ Copy-Item "C:\Qt\Tools\llvm-mingw1706_64\bin\libc++.dll", "C:\Qt\Tools\llvm-ming
 Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\platforms\qwindows.dll" "$dist\platforms"
 Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\styles\qmodernwindowsstyle.dll" "$dist\styles"
 Copy-Item "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_CN.qm", "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_TW.qm" "$dist\translations"
+Copy-Item packaging\windows\qt.conf $dist
 ```
 
-(A MinGW kit's runtime DLLs live somewhere else — e.g. `mingw_64\bin` itself rather than a separate `Tools\llvm-mingw*` directory; adjust accordingly.) A `qt.conf` next to the exe (`dist\windows\qt.conf`, already in the repo) points Qt at that bundled `translations` folder — without it, `QLibraryInfo::TranslationsPath` falls back to a path baked into `Qt6Core.dll` at Qt's own build time, i.e. wherever Qt happened to be installed on *this* machine, which won't exist on an end user's.
+(A MinGW kit's runtime DLLs live somewhere else — e.g. `mingw_64\bin` itself rather than a separate `Tools\llvm-mingw*` directory; adjust accordingly.) The `qt.conf` copied in above (tracked in the repo at `packaging\windows\qt.conf`) points Qt at that bundled `translations` folder once it's sitting next to the exe — without it, `QLibraryInfo::TranslationsPath` falls back to a path baked into `Qt6Core.dll` at Qt's own build time, i.e. wherever Qt happened to be installed on *this* machine, which won't exist on an end user's.
 
 Once `dist\windows\` holds the exe plus all of the above, either run it directly from there, or build an installer with [Inno Setup](https://jrsoftware.org/isinfo.php) (free):
 
@@ -253,9 +254,10 @@ Copy-Item "C:\Qt\Tools\llvm-mingw1706_64\bin\libc++.dll", "C:\Qt\Tools\llvm-ming
 Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\platforms\qwindows.dll" "$dist\platforms"
 Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\styles\qmodernwindowsstyle.dll" "$dist\styles"
 Copy-Item "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_CN.qm", "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_TW.qm" "$dist\translations"
+Copy-Item packaging\windows\qt.conf $dist
 ```
 
-（MinGW 套件的运行时 DLL 在别的地方——比如就在 `mingw_64\bin` 本身，不是单独的 `Tools\llvm-mingw*` 目录，按实际路径调整。）exe 旁边的 `qt.conf`（仓库里已经有，`dist\windows\qt.conf`）把 Qt 的翻译文件查找路径指向了这个 `translations` 子文件夹——没有它的话，`QLibraryInfo::TranslationsPath` 会退回到 Qt 自己编译时写死的路径，也就是*这台机器*上 Qt 的安装位置，到了最终用户那台机器上这个路径根本不存在。
+（MinGW 套件的运行时 DLL 在别的地方——比如就在 `mingw_64\bin` 本身，不是单独的 `Tools\llvm-mingw*` 目录，按实际路径调整。）上面拷进去的这个 `qt.conf`（仓库里跟踪的位置是 `packaging\windows\qt.conf`）放到 exe 旁边后，会把 Qt 的翻译文件查找路径指向那个 `translations` 子文件夹——没有它的话，`QLibraryInfo::TranslationsPath` 会退回到 Qt 自己编译时写死的路径，也就是*这台机器*上 Qt 的安装位置，到了最终用户那台机器上这个路径根本不存在。
 
 `dist\windows\` 里备齐可执行文件和上面这些依赖之后，可以直接从那运行，也可以用 [Inno Setup](https://jrsoftware.org/isinfo.php)（免费）打出一个安装包：
 

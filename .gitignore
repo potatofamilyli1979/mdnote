@@ -22,4 +22,8 @@
 
 # Editor/IDE cruft
 .vscode/
+.qtcreator/
 *.swp
+
+# Built installer (packaging/windows/mdnote.iss's own output)
+/*.exe
