@@ -59,7 +59,7 @@ The rest of this README uses the from-source `~/.local` paths — substitute `/u
 
 ### Windows (experimental)
 
-Basic Windows support was added recently (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`) and has been built and run successfully on Windows 10/11. One known rough edge: the same pixel-mask technique Linux uses for the rounded corners has no antialiasing, so at 100% display scaling the curve looks a bit more faceted than on a higher-DPI or scaled-up display (a native-compositor-rounding alternative was tried and reverted -- it rounded the wrong rectangle, see the git history if curious). [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) welcome.
+Basic Windows support was added recently (global hotkey via `RegisterHotKey`, settings via `QSettings`, single-instance via `QLocalSocket`/`QLocalServer`, always-on-top via `SetWindowPos`) and has been built and run successfully on Windows 10/11. The rounded corners are antialiased (a `QGraphicsEffect`-based clip, not a hard-edged pixel mask — see `RoundedCornersEffect` in `src/SlideWindow.cpp`) and look smooth at any display scale factor. [Bug reports / PRs](https://github.com/potatofamilyli1979/mdnote/issues) welcome.
 
 Prerequisites: Qt6 (MSVC or MinGW kit, including the Linguist Tools component — installable via the [Qt online installer](https://www.qt.io/download-qt-installer)) and CMake.
 
@@ -70,13 +70,29 @@ cmake --build build --config Release
 
 (Substitute your actual Qt install path/kit; add `-G "MinGW Makefiles"` for a MinGW kit, or run from a "x64 Native Tools Command Prompt for VS" for an MSVC kit.)
 
-The build won't run as-is: Qt's DLLs aren't on Windows' default search path, so run Qt's deployment tool against the built executable once, from the matching kit's `bin` directory:
+The build won't run as-is: Qt's DLLs aren't on Windows' default search path. Qt's own `windeployqt6.exe` deployment tool is the normal way to gather them, but as of Qt 6.11's llvm-mingw kit it fails against this project's build with `Unable to find the platform plugin.` (a known windeployqt bug misdetecting a non-MSVC-suffixed build's debug/release flavor, which leaves it with an empty plugin list) — so for now the handful of required files are copied by hand instead:
 
 ```powershell
-C:\Qt\6.8.0\mingw_64\bin\windeployqt6.exe build\mdnote.exe
+$dist = "dist\windows"
+New-Item -ItemType Directory -Force "$dist\platforms", "$dist\styles", "$dist\translations" | Out-Null
+Copy-Item build\mdnote.exe $dist
+Copy-Item "C:\Qt\6.8.0\mingw_64\bin\Qt6Core.dll", "C:\Qt\6.8.0\mingw_64\bin\Qt6Gui.dll", `
+  "C:\Qt\6.8.0\mingw_64\bin\Qt6Widgets.dll", "C:\Qt\6.8.0\mingw_64\bin\Qt6Network.dll" $dist
+Copy-Item "C:\Qt\Tools\llvm-mingw1706_64\bin\libc++.dll", "C:\Qt\Tools\llvm-mingw1706_64\bin\libunwind.dll" $dist
+Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\platforms\qwindows.dll" "$dist\platforms"
+Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\styles\qmodernwindowsstyle.dll" "$dist\styles"
+Copy-Item "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_CN.qm", "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_TW.qm" "$dist\translations"
 ```
 
-The GNOME Shell extension and Debian packaging obviously don't apply here — this builds just the `mdnote.exe` editor/notebook itself. There's no Windows installer yet; run the deployed executable directly, or copy the whole output folder wherever you like.
+(A MinGW kit's runtime DLLs live somewhere else — e.g. `mingw_64\bin` itself rather than a separate `Tools\llvm-mingw*` directory; adjust accordingly.) A `qt.conf` next to the exe (`dist\windows\qt.conf`, already in the repo) points Qt at that bundled `translations` folder — without it, `QLibraryInfo::TranslationsPath` falls back to a path baked into `Qt6Core.dll` at Qt's own build time, i.e. wherever Qt happened to be installed on *this* machine, which won't exist on an end user's.
+
+Once `dist\windows\` holds the exe plus all of the above, either run it directly from there, or build an installer with [Inno Setup](https://jrsoftware.org/isinfo.php) (free):
+
+```powershell
+"C:\Program Files\Inno Setup 7\ISCC.exe" packaging\windows\mdnote.iss
+```
+
+This produces `dist\installer\mdnote-<version>-setup.exe` — a small (~11MB), self-contained, per-user installer (no admin rights needed) with Start Menu/optional desktop shortcuts, using the same app icon (`data\windows\mdnote.ico`) embedded in the exe itself via `data\windows\mdnote.rc`. The GNOME Shell extension and Debian packaging obviously don't apply on Windows.
 
 ### Autostart (recommended)
 
@@ -214,7 +230,7 @@ sudo apt install ../mdnote_*.deb ../gnome-shell-extension-mdnote-quake_*.deb
 
 ### Windows（实验性）
 
-最近刚加上了基础的 Windows 支持（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），已经在 Windows 10/11 上编译运行成功。已知的一个小瑕疵：圆角用的是跟 Linux 一样的像素遮罩方案，不支持抗锯齿，在 100% 缩放下看起来会比高分屏/缩放屏上更有棱角一些（中间试过换成系统原生圆角渲染，但遮罩加在了错的矩形上，效果更差，已经改回来了，感兴趣可以翻 git 记录）。欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
+最近刚加上了基础的 Windows 支持（全局快捷键用 `RegisterHotKey`，配置存储用 `QSettings`，单实例用 `QLocalSocket`/`QLocalServer`，置顶用 `SetWindowPos`），已经在 Windows 10/11 上编译运行成功。圆角现在是抗锯齿的（用 `QGraphicsEffect` 做裁剪，不是硬边像素遮罩——见 `src/SlideWindow.cpp` 里的 `RoundedCornersEffect`），在任何缩放比例下看起来都很平滑。欢迎提 [bug 或 PR](https://github.com/potatofamilyli1979/mdnote/issues)。
 
 依赖：Qt6（MSVC 或 MinGW 套件，记得勾上 Linguist Tools 组件——可以从 [Qt 官方在线安装器](https://www.qt.io/download-qt-installer) 装）和 CMake。
 
@@ -225,13 +241,29 @@ cmake --build build --config Release
 
 （路径换成你实际的 Qt 安装位置/套件；MinGW 套件加 `-G "MinGW Makefiles"`，MSVC 套件要在 "x64 Native Tools Command Prompt for VS" 里跑。）
 
-编译完不能直接运行：Qt 的 DLL 不在 Windows 默认搜索路径里，需要用对应套件 `bin` 目录下的部署工具跑一次：
+编译完不能直接运行：Qt 的 DLL 不在 Windows 默认搜索路径里。正常应该用 Qt 自带的 `windeployqt6.exe` 部署工具收集这些依赖，但截至 Qt 6.11 的 llvm-mingw 套件，这个工具在本项目上会报 `Unable to find the platform plugin.` 失败（windeployqt 的一个已知 bug：误判非 MSVC 命名规则的 debug/release 版本，导致插件列表被判定为空）——所以目前是手动拷贝这几个必需文件：
 
 ```powershell
-C:\Qt\6.8.0\mingw_64\bin\windeployqt6.exe build\mdnote.exe
+$dist = "dist\windows"
+New-Item -ItemType Directory -Force "$dist\platforms", "$dist\styles", "$dist\translations" | Out-Null
+Copy-Item build\mdnote.exe $dist
+Copy-Item "C:\Qt\6.8.0\mingw_64\bin\Qt6Core.dll", "C:\Qt\6.8.0\mingw_64\bin\Qt6Gui.dll", `
+  "C:\Qt\6.8.0\mingw_64\bin\Qt6Widgets.dll", "C:\Qt\6.8.0\mingw_64\bin\Qt6Network.dll" $dist
+Copy-Item "C:\Qt\Tools\llvm-mingw1706_64\bin\libc++.dll", "C:\Qt\Tools\llvm-mingw1706_64\bin\libunwind.dll" $dist
+Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\platforms\qwindows.dll" "$dist\platforms"
+Copy-Item "C:\Qt\6.8.0\mingw_64\plugins\styles\qmodernwindowsstyle.dll" "$dist\styles"
+Copy-Item "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_CN.qm", "C:\Qt\6.8.0\mingw_64\translations\qtbase_zh_TW.qm" "$dist\translations"
 ```
 
-GNOME Shell 扩展和 Debian 打包这两块在 Windows 上自然用不上——这只是编译出编辑器/笔记本本体的 `mdnote.exe`。暂时没有 Windows 安装包，部署好之后可执行文件直接运行，或者把整个输出文件夹拷到任意地方都行。
+（MinGW 套件的运行时 DLL 在别的地方——比如就在 `mingw_64\bin` 本身，不是单独的 `Tools\llvm-mingw*` 目录，按实际路径调整。）exe 旁边的 `qt.conf`（仓库里已经有，`dist\windows\qt.conf`）把 Qt 的翻译文件查找路径指向了这个 `translations` 子文件夹——没有它的话，`QLibraryInfo::TranslationsPath` 会退回到 Qt 自己编译时写死的路径，也就是*这台机器*上 Qt 的安装位置，到了最终用户那台机器上这个路径根本不存在。
+
+`dist\windows\` 里备齐可执行文件和上面这些依赖之后，可以直接从那运行，也可以用 [Inno Setup](https://jrsoftware.org/isinfo.php)（免费）打出一个安装包：
+
+```powershell
+"C:\Program Files\Inno Setup 7\ISCC.exe" packaging\windows\mdnote.iss
+```
+
+会生成 `dist\installer\mdnote-<version>-setup.exe`——一个体积很小（约 11MB）、免管理员权限、按用户安装的独立安装包，带开始菜单/可选桌面快捷方式，用的是同一个应用图标（`data\windows\mdnote.ico`，通过 `data\windows\mdnote.rc` 嵌入到 exe 本体里）。GNOME Shell 扩展和 Debian 打包这两块在 Windows 上自然用不上。
 
 ### 开机自启（推荐）
 

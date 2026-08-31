@@ -1,6 +1,7 @@
 # Out-of-tree build directories
 /build/
 /obj-x86_64-linux-gnu/
+/dist/
 
 # Debian packaging build artifacts (left in debian/ by dpkg-buildpackage)
 /debian/.debhelper/
